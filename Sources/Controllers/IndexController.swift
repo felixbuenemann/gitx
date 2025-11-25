@@ -162,7 +162,8 @@ import AppKit
     }
 
     @objc func commit(_ sender: Any?) {
-        guard let message = commitMessageView.string, !message.isEmpty else {
+        let message = commitMessageView.string
+        guard !message.isEmpty else {
             showError("Please enter a commit message")
             return
         }

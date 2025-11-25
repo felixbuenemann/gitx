@@ -42,8 +42,8 @@ final class GitXTests: XCTestCase {
         let ref2 = GitRef(string: "refs/heads/main")
         let ref3 = GitRef(string: "refs/heads/develop")
 
-        XCTAssertTrue(ref1.isEqual(to: ref2))
-        XCTAssertFalse(ref1.isEqual(to: ref3))
+        XCTAssertTrue(ref1.isEqualToRef(ref2))
+        XCTAssertFalse(ref1.isEqualToRef(ref3))
     }
 
     // MARK: - GitRevSpecifier Tests

@@ -86,7 +86,7 @@ public struct GitRefPrefix {
         return String(shortName[startIndex...])
     }
 
-    @objc public func isEqual(to otherRef: GitRef) -> Bool {
+    @objc public func isEqualToRef(_ otherRef: GitRef) -> Bool {
         return ref == otherRef.ref
     }
 

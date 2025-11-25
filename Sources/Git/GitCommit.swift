@@ -42,7 +42,7 @@ public let GitCommitType = "commit"
         }
     }
 
-    @objc public var sign: Character = " "
+    @objc public var sign: String = " "
     @objc public var lineInfo: GraphCellInfo?
 
     // MARK: - Computed Properties
@@ -124,7 +124,7 @@ public let GitCommitType = "commit"
 
     @objc public func addRef(_ ref: GitRef) {
         var currentRefs = refs
-        if !currentRefs.contains(where: { $0.isEqual(to: ref) }) {
+        if !currentRefs.contains(where: { $0.isEqualToRef(ref) }) {
             currentRefs.append(ref)
             refs = currentRefs
         }
@@ -132,12 +132,12 @@ public let GitCommitType = "commit"
 
     @objc public func removeRef(_ ref: GitRef) {
         var currentRefs = refs
-        currentRefs.removeAll { $0.isEqual(to: ref) }
+        currentRefs.removeAll { $0.isEqualToRef(ref) }
         refs = currentRefs
     }
 
     @objc public func hasRef(_ ref: GitRef) -> Bool {
-        return refs.contains { $0.isEqual(to: ref) }
+        return refs.contains { $0.isEqualToRef(ref) }
     }
 
     // MARK: - Branch Checking

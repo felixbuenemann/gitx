@@ -281,7 +281,7 @@ public enum BranchFilterType: Int {
 
     @objc public var headCommit: GitCommit? {
         guard let sha = headSHA else { return nil }
-        return commit(for: sha)
+        return commitForSHA(sha)
     }
 
     // MARK: - Ref Operations
@@ -289,7 +289,7 @@ public enum BranchFilterType: Int {
     @objc public func sha(for ref: GitRef) -> String? {
         // Check cache first
         for (sha, refsForSHA) in refs {
-            if refsForSHA.contains(where: { $0.isEqual(to: ref) }) {
+            if refsForSHA.contains(where: { $0.isEqualToRef(ref) }) {
                 return sha
             }
         }
@@ -313,10 +313,10 @@ public enum BranchFilterType: Int {
 
     @objc public func commit(for ref: GitRef) -> GitCommit? {
         guard let sha = sha(for: ref) else { return nil }
-        return commit(for: sha)
+        return commitForSHA(sha)
     }
 
-    @objc public func commit(for sha: String) -> GitCommit? {
+    @objc public func commitForSHA(_ sha: String) -> GitCommit? {
         return revisionList.projectCommits.first { $0.sha == sha }
     }
 
@@ -324,7 +324,7 @@ public enum BranchFilterType: Int {
         if refs[sha] == nil {
             refs[sha] = [ref]
         } else {
-            if !refs[sha]!.contains(where: { $0.isEqual(to: ref) }) {
+            if !refs[sha]!.contains(where: { $0.isEqualToRef(ref) }) {
                 refs[sha]!.append(ref)
             }
         }
@@ -662,12 +662,12 @@ public enum BranchFilterType: Int {
 
     // MARK: - Hook Execution
 
-    @objc public func executeHook(_ name: String, arguments: [String] = []) -> (success: Bool, output: String?) {
+    @objc public func executeHook(_ name: String, arguments: [String] = []) -> HookExecutionResult {
         guard let hookPath = gitURL?.appendingPathComponent("hooks/\(name)").path,
               FileManager.default.isExecutableFile(atPath: hookPath),
               let dir = workingDirectory,
               let gitDir = gitURL?.path else {
-            return (true, nil)  // No hook is success
+            return HookExecutionResult(success: true, output: nil)  // No hook is success
         }
 
         let environment = [
@@ -682,9 +682,9 @@ public enum BranchFilterType: Int {
                 directory: dir,
                 environment: environment
             )
-            return (result.exitCode == 0, result.output)
+            return HookExecutionResult(success: result.exitCode == 0, output: result.output)
         } catch {
-            return (false, error.localizedDescription)
+            return HookExecutionResult(success: false, output: error.localizedDescription)
         }
     }
 
@@ -808,6 +808,17 @@ public enum GitRepoFinder {
 
     @objc public func stop() {
         // Stop watching
+    }
+}
+
+@objc public class HookExecutionResult: NSObject {
+    @objc public let success: Bool
+    @objc public let output: String?
+
+    @objc public init(success: Bool, output: String?) {
+        self.success = success
+        self.output = output
+        super.init()
     }
 }
 

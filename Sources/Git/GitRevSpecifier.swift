@@ -33,7 +33,7 @@ import Foundation
         guard let other = object as? GitRevSpecifier else { return false }
 
         if let ref = ref, let otherRef = other.ref {
-            return ref.isEqual(to: otherRef)
+            return ref.isEqualToRef(otherRef)
         }
 
         return parameters == other.parameters

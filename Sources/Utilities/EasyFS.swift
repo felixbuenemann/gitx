@@ -23,40 +23,22 @@ public enum EasyFS {
         let template = FileManager.default.temporaryDirectory
             .appendingPathComponent("XXXXXX\(suffix)")
 
-        var templatePath = template.path
-        let result = templatePath.withUTF8 { buffer -> String in
-            var mutableBuffer = Array(buffer)
-            mutableBuffer.append(0) // null terminator
-
-            return mutableBuffer.withUnsafeMutableBufferPointer { ptr -> String in
-                guard let baseAddress = ptr.baseAddress else { return template.path }
-                let cString = UnsafeMutablePointer(OpaquePointer(baseAddress))
-                let fd = mkstemps(cString, Int32(suffix.count))
-                close(fd)
-                return String(cString: cString)
-            }
-        }
-
-        return URL(fileURLWithPath: result)
+        var templateBytes = Array(template.path.utf8CString)
+        let fd = mkstemps(&templateBytes, Int32(suffix.count))
+        close(fd)
+        let resultPath = String(cString: templateBytes)
+        return URL(fileURLWithPath: resultPath)
     }
 
     public static func temporaryDirectory(withPrefix prefix: String) -> URL {
         let template = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(prefix).XXXXXX")
 
-        var templatePath = template.path
-        let result = templatePath.withUTF8 { buffer -> String in
-            var mutableBuffer = Array(buffer)
-            mutableBuffer.append(0) // null terminator
-
-            return mutableBuffer.withUnsafeMutableBufferPointer { ptr -> String in
-                guard let baseAddress = ptr.baseAddress else { return template.path }
-                let cString = UnsafeMutablePointer(OpaquePointer(baseAddress))
-                guard let resultPtr = mkdtemp(cString) else { return template.path }
-                return String(cString: resultPtr)
-            }
+        var templateBytes = Array(template.path.utf8CString)
+        guard mkdtemp(&templateBytes) != nil else {
+            return template
         }
-
-        return URL(fileURLWithPath: result)
+        let resultPath = String(cString: templateBytes)
+        return URL(fileURLWithPath: resultPath)
     }
 }
