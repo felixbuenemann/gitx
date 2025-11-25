@@ -216,6 +216,31 @@
 		};
 /* End PBXGroup section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		SCRIPT001 /* Build CLI Tools */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Sources/CLI/gitx_cli.swift",
+				"$(SRCROOT)/Sources/CLI/gitx_askpasswd.swift",
+			);
+			name = "Build CLI Tools";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/gitx",
+				"$(BUILT_PRODUCTS_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/gitx_askpasswd",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "# Build CLI tools and copy to Resources\nset -e\n\n# Build gitx CLI tool\nswiftc -O -o \"${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/gitx\" \\\n    \"${SRCROOT}/Sources/CLI/gitx_cli.swift\"\n\n# Build gitx_askpasswd tool  \nswiftc -O -o \"${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/gitx_askpasswd\" \\\n    \"${SRCROOT}/Sources/CLI/gitx_askpasswd.swift\"\n\necho \"CLI tools built successfully\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXNativeTarget section */
 		TGT001 /* GitX */ = {
 			isa = PBXNativeTarget;
@@ -224,6 +249,7 @@
 				SRC001 /* Sources */,
 				FWK001 /* Frameworks */,
 				RES001 /* Resources */,
+				SCRIPT001 /* Build CLI Tools */,
 			);
 			buildRules = (
 			);
