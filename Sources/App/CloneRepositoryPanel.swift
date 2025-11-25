@@ -138,9 +138,9 @@ import AppKit
 
             // Open the cloned repository
             let url = URL(fileURLWithPath: destination)
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 do {
-                    try NSDocumentController.shared.openDocument(withContentsOf: url, display: true)
+                    _ = try await NSDocumentController.shared.openDocument(withContentsOf: url, display: true)
                 } catch {
                     self.showError("Failed to open cloned repository: \(error.localizedDescription)")
                 }

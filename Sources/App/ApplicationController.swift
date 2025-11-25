@@ -48,13 +48,14 @@ import AppKit
 
     public func application(_ sender: NSApplication, openFile filename: String) -> Bool {
         let url = URL(fileURLWithPath: filename)
-        return openRepository(at: url)
+        openRepository(at: url)
+        return true
     }
 
     public func application(_ sender: NSApplication, openFiles filenames: [String]) {
         for filename in filenames {
             let url = URL(fileURLWithPath: filename)
-            _ = openRepository(at: url)
+            openRepository(at: url)
         }
     }
 
@@ -84,17 +85,18 @@ import AppKit
 
     // MARK: - Repository Operations
 
-    @discardableResult
-    private func openRepository(at url: URL) -> Bool {
-        do {
-            let document = try NSDocumentController.shared.openDocument(
-                withContentsOf: url,
-                display: true
-            )
-            return document != nil
-        } catch {
-            showError(error)
-            return false
+    private func openRepository(at url: URL) {
+        Task {
+            do {
+                _ = try await NSDocumentController.shared.openDocument(
+                    withContentsOf: url,
+                    display: true
+                )
+            } catch {
+                await MainActor.run {
+                    showError(error)
+                }
+            }
         }
     }
 
@@ -109,7 +111,7 @@ import AppKit
         let response = panel.runModal()
         if response == .OK {
             for url in panel.urls {
-                _ = openRepository(at: url)
+                openRepository(at: url)
             }
             return true
         }
@@ -132,7 +134,7 @@ import AppKit
                     }
                 case "open":
                     if let path = url.path.removingPercentEncoding {
-                        _ = openRepository(at: URL(fileURLWithPath: path))
+                        openRepository(at: URL(fileURLWithPath: path))
                     }
                 default:
                     break
