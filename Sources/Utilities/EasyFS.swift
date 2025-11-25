@@ -10,6 +10,15 @@ import Foundation
 
 public enum EasyFS {
 
+    public static func fileExists(atPath path: String) -> Bool {
+        return FileManager.default.fileExists(atPath: path)
+    }
+
+    public static func directoryExists(atPath path: String) -> Bool {
+        var isDir: ObjCBool = false
+        return FileManager.default.fileExists(atPath: path, isDirectory: &isDir) && isDir.boolValue
+    }
+
     public static func temporaryFile(withSuffix suffix: String) -> URL {
         let template = FileManager.default.temporaryDirectory
             .appendingPathComponent("XXXXXX\(suffix)")

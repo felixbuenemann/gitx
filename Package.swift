@@ -9,29 +9,13 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        .executable(
-            name: "GitX",
-            targets: ["GitX"]
-        ),
         .library(
             name: "GitXCore",
             targets: ["GitXCore"]
         )
     ],
-    dependencies: [
-        // Add any Swift package dependencies here
-    ],
+    dependencies: [],
     targets: [
-        // Main application target
-        .executableTarget(
-            name: "GitX",
-            dependencies: ["GitXCore"],
-            path: "Sources/App",
-            exclude: [],
-            resources: [
-                .process("../Resources")
-            ]
-        ),
         // Core library with Git functionality
         .target(
             name: "GitXCore",

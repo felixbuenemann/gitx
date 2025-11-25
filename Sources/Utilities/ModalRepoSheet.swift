@@ -12,13 +12,13 @@ import AppKit
 @objc public class ModalRepoSheet: NSWindowController {
 
     public weak var repository: GitRepository?
-    public weak var repositoryWindowController: GitWindowController?
+    public weak var repositoryWindowController: RepositoryWindowController?
 
     public init(nibName: NSNib.Name, repository: GitRepository) {
         super.init(window: nil)
         Bundle.main.loadNibNamed(nibName, owner: self, topLevelObjects: nil)
         self.repository = repository
-        self.repositoryWindowController = repository.windowController
+        // Window controller will be set separately
     }
 
     required init?(coder: NSCoder) {

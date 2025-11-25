@@ -32,7 +32,7 @@ public enum BranchFilterType: Int {
     @objc public var hasChanged: Bool = false
     @objc public var currentBranchFilter: Int = 0
 
-    @objc public private(set) var windowController: GitWindowController?
+    @objc public private(set) var windowController: RepositoryWindowController?
     @objc public lazy var revisionList: GitHistoryList = {
         return GitHistoryList(repository: self)
     }()
@@ -114,7 +114,7 @@ public enum BranchFilterType: Int {
 
     public override func makeWindowControllers() {
         #if !CLI
-        let controller = GitWindowController(repository: self, displayDefault: true)
+        let controller = RepositoryWindowController(repository: self, displayDefault: true)
         windowController = controller
         addWindowController(controller)
         #endif
@@ -811,36 +811,3 @@ public enum GitRepoFinder {
     }
 }
 
-// Placeholder for window controller
-@objc public class GitWindowController: NSWindowController {
-    @objc public weak var repository: GitRepository?
-
-    @objc public init(repository: GitRepository, displayDefault: Bool) {
-        self.repository = repository
-        super.init(window: nil)
-    }
-
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-    }
-
-    @objc public func showModalSheet(_ sheet: ModalRepoSheet) {
-        // Implementation
-    }
-
-    @objc public func hideModalSheet(_ sheet: ModalRepoSheet) {
-        // Implementation
-    }
-
-    @objc public func showErrorSheet(title: String, message: String, output: String) {
-        // Implementation
-    }
-
-    @objc public func showHistoryView(_ sender: Any?) {
-        // Implementation
-    }
-
-    @objc public func showCommitView(_ sender: Any?) {
-        // Implementation
-    }
-}
