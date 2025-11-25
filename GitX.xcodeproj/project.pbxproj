@@ -40,6 +40,12 @@
 		SW026 /* PreferencesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF026; };
 		/* Resources */
 		RB001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = RF001; };
+		RB002 /* Credits.html in Resources */ = {isa = PBXBuildFile; fileRef = RF004; };
+		RB003 /* UpdateKey.pem in Resources */ = {isa = PBXBuildFile; fileRef = RF005; };
+		RB004 /* gitx.icns in Resources */ = {isa = PBXBuildFile; fileRef = RF006; };
+		RB005 /* source.css in Resources */ = {isa = PBXBuildFile; fileRef = RF007; };
+		RB006 /* Images in Resources */ = {isa = PBXBuildFile; fileRef = RF008; };
+		RB007 /* XIBs in Resources */ = {isa = PBXBuildFile; fileRef = RF009; };
 		/* Frameworks */
 		FB001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = PR001; };
 /* End PBXBuildFile section */
@@ -82,6 +88,12 @@
 		RF001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		RF002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		RF003 /* GitX.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GitX.entitlements; sourceTree = "<group>"; };
+		RF004 /* Credits.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = Credits.html; sourceTree = "<group>"; };
+		RF005 /* UpdateKey.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = UpdateKey.pem; sourceTree = "<group>"; };
+		RF006 /* gitx.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = gitx.icns; sourceTree = "<group>"; };
+		RF007 /* source.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = source.css; sourceTree = "<group>"; };
+		RF008 /* Images */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Images; sourceTree = "<group>"; };
+		RF009 /* XIBs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = XIBs; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -173,6 +185,12 @@
 				RF001 /* Assets.xcassets */,
 				RF002 /* Info.plist */,
 				RF003 /* GitX.entitlements */,
+				RF004 /* Credits.html */,
+				RF005 /* UpdateKey.pem */,
+				RF006 /* gitx.icns */,
+				RF007 /* source.css */,
+				RF008 /* Images */,
+				RF009 /* XIBs */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -261,6 +279,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				RB001 /* Assets.xcassets in Resources */,
+				RB002 /* Credits.html in Resources */,
+				RB003 /* UpdateKey.pem in Resources */,
+				RB004 /* gitx.icns in Resources */,
+				RB005 /* source.css in Resources */,
+				RB006 /* Images in Resources */,
+				RB007 /* XIBs in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
