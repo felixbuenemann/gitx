@@ -1,12 +1,17 @@
 //
+// GitX Prefix Header
+//
+// The contents of this file are implicitly included at the beginning
+// of every source file in the project.
+//
+
+#ifndef GitX_Prefix_pch
+#define GitX_Prefix_pch
 
 #ifdef __OBJC__
     #import <Cocoa/Cocoa.h>
-    #import <ObjectiveGit/ObjectiveGit.h>
 #endif
 
-#ifdef GITX_NO_DEPRECATE
-#define GITX_DEPRECATED
-#else
-#define GITX_DEPRECATED __attribute__ ((deprecated))
-#endif
+// Note: Swift code doesn't use prefix headers - this is only for remaining ObjC files
+
+#endif /* GitX_Prefix_pch */

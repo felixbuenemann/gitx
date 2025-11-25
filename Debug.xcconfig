@@ -8,9 +8,9 @@
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
 //  You may obtain a copy of the License at
-//  
+//
 //    http://www.apache.org/licenses/LICENSE-2.0
-//  
+//
 //  Unless required by applicable law or agreed to in writing, software
 //  distributed under the License is distributed on an "AS IS" BASIS,
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,14 +19,21 @@
 
 #include "Common.xcconfig"
 
-// Macros
+// Debug Configuration
+DEBUG_INFORMATION_FORMAT = dwarf
+GCC_OPTIMIZATION_LEVEL = 0
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
+GCC_PREPROCESSOR_DEFINITIONS = DEBUG=1 $(inherited)
 
-GCC_PREPROCESSOR_DEFINITIONS_NOT_USED_IN_PRECOMPS = DEBUG_BUILD
+// Enable testability for unit tests
+ENABLE_TESTABILITY = YES
 
-OTHER_CFLAGS = -fdiagnostics-show-option
-
-// Warnings
-
+// Diagnostics
 GCC_WARN_UNUSED_VARIABLE = YES
 GCC_WARN_CHECK_SWITCH_STATEMENTS = YES
 GCC_WARN_ABOUT_RETURN_TYPE = YES
+
+// Other Flags
+OTHER_CFLAGS = -fdiagnostics-show-option
+MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE
