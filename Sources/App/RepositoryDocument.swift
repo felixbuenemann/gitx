@@ -150,6 +150,20 @@ final class RepositoryDocument: ReferenceFileDocument {
                     commitRefs[commitOID, default: []].append(refInfo)
                 }
 
+                // Get stashes
+                var stashInfos: [StashInfo] = []
+                if let stashEntries = try? repo.stash.list() {
+                    for entry in stashEntries {
+                        let info = StashInfo(
+                            id: entry.index,
+                            message: entry.message,
+                            date: entry.date,
+                            stasher: entry.stasher.name
+                        )
+                        stashInfos.append(info)
+                    }
+                }
+
                 // Load commits from selected branch or all
                 let commitInfos = loadCommitsSync(fromBranch: state.selectedBranch, limit: 1000)
 
@@ -158,6 +172,7 @@ final class RepositoryDocument: ReferenceFileDocument {
                     state.branches = branchNames
                     state.remotes = remoteNames
                     state.tags = tagNames
+                    state.stashes = stashInfos
                     state.commits = commitInfos
                     state.commitRefs = commitRefs
                 }
@@ -461,9 +476,27 @@ struct RepositoryState {
     var branches: [String] = []
     var remotes: [String] = []
     var tags: [String] = []
+    var stashes: [StashInfo] = []
     var commits: [CommitInfo] = []
     var selectedCommit: CommitInfo?
     var commitRefs: [String: [RefInfo]] = [:]  // OID -> refs pointing to it
+}
+
+// MARK: - Stash Info
+
+struct StashInfo: Identifiable, Hashable {
+    let id: Int  // stash index
+    let message: String
+    let date: Date
+    let stasher: String
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
+    static func == (lhs: StashInfo, rhs: StashInfo) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 struct RefInfo: Hashable {

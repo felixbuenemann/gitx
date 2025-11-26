@@ -71,11 +71,28 @@ struct SidebarView: View {
                 }
             }
 
-            // Stashes (placeholder)
+            // Stashes
             Section(isExpanded: $stashesExpanded) {
-                Text("No stashes")
-                    .foregroundColor(.secondary)
-                    .font(.caption)
+                if state.stashes.isEmpty {
+                    Text("No stashes")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                } else {
+                    ForEach(state.stashes) { stash in
+                        HStack {
+                            Image(systemName: "tray.full")
+                                .foregroundColor(.secondary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(stash.message.isEmpty ? "stash@{\(stash.id)}" : stash.message)
+                                    .lineLimit(1)
+                                Text(stash.date, style: .relative)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .tag(SidebarItem.stash(stash.id))
+                    }
+                }
             } header: {
                 Label("STASHES", systemImage: "tray.2")
             }
