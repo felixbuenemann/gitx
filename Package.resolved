@@ -1,0 +1,23 @@
+{
+  "pins" : [
+    {
+      "identity" : "libgit2",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ibrahimcetin/libgit2.git",
+      "state" : {
+        "revision" : "a75bab85c48cef6583841ff2a435744f206fcff9",
+        "version" : "1.9.1"
+      }
+    },
+    {
+      "identity" : "swiftgitx",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ibrahimcetin/SwiftGitX",
+      "state" : {
+        "revision" : "02af1908e6be6ab10a325a03e80433f32d30a675",
+        "version" : "0.2.0"
+      }
+    }
+  ],
+  "version" : 2
+}
