@@ -18,7 +18,6 @@ struct SidebarView: View {
     @State private var tagsExpanded = true
     @State private var stashesExpanded = true
     @State private var submodulesExpanded = true
-    @State private var otherExpanded = true
 
     var body: some View {
         List(selection: $selection) {
@@ -124,14 +123,6 @@ struct SidebarView: View {
                 }
             } header: {
                 Label("SUBMODULES", systemImage: "folder.badge.gearshape")
-            }
-
-            // Other
-            Section(isExpanded: $otherExpanded) {
-                Label("Other", systemImage: "ellipsis.circle")
-                    .tag(SidebarItem.other)
-            } header: {
-                Label("OTHER", systemImage: "ellipsis.circle")
             }
         }
         .listStyle(.sidebar)

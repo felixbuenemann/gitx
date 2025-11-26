@@ -88,7 +88,7 @@ struct RepositoryView: View {
         switch selectedSidebarItem {
         case .stage:
             CommitView(document: document)
-        case .history, .branch, .remote, .tag, .stash, .submodule, .other, .none:
+        case .history, .branch, .remote, .tag, .stash, .submodule, .none:
             HistoryView(
                 document: document,
                 selectedCommit: $selectedCommit
@@ -163,5 +163,4 @@ enum SidebarItem: Hashable {
     case tag(String)
     case stash(Int)
     case submodule(String)
-    case other
 }
