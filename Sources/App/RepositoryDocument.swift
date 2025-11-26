@@ -126,6 +126,8 @@ final class RepositoryDocument: ReferenceFileDocument {
                     let refInfo = RefInfo(name: branch.name, type: .localBranch)
                     commitRefs[commitOID, default: []].append(refInfo)
                 }
+                // Sort branches using natural/human sort
+                branchNames.sort { $0.localizedStandardCompare($1) == .orderedAscending }
 
                 // Get remote branches
                 for branch in repo.branch.remote {
@@ -139,6 +141,8 @@ final class RepositoryDocument: ReferenceFileDocument {
                 for remote in repo.remote {
                     remoteNames.append(remote.name)
                 }
+                // Sort remotes using natural/human sort
+                remoteNames.sort { $0.localizedStandardCompare($1) == .orderedAscending }
 
                 // Get tags
                 var tagNames: [String] = []
@@ -149,6 +153,8 @@ final class RepositoryDocument: ReferenceFileDocument {
                     let refInfo = RefInfo(name: tag.name, type: .tag)
                     commitRefs[commitOID, default: []].append(refInfo)
                 }
+                // Sort tags using natural/human sort (so 0.10.0 comes after 0.9.0)
+                tagNames.sort { $0.localizedStandardCompare($1) == .orderedAscending }
 
                 // Get stashes
                 var stashInfos: [StashInfo] = []
@@ -244,6 +250,9 @@ final class RepositoryDocument: ReferenceFileDocument {
                 isCheckedOut: isCheckedOut
             ))
         }
+
+        // Sort submodules using natural/human sort
+        submodules.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
 
         return submodules
     }
