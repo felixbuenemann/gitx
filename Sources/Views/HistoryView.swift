@@ -12,7 +12,7 @@ struct HistoryView: View {
     @Binding var selectedCommit: CommitInfo?
     @State private var searchText = ""
     @State private var filterMode: FilterMode = .all
-    @State private var selectedCommitID: UUID?
+    @State private var graphLayouts: [String: CommitGraphLayout] = [:]
 
     enum FilterMode: String, CaseIterable {
         case all = "All"
@@ -113,48 +113,27 @@ struct HistoryView: View {
     // MARK: - Commit Table
 
     private var commitTable: some View {
-        Table(filteredCommits, selection: $selectedCommitID) {
-            TableColumn("SHA") { commit in
-                Text(commit.shortOID)
-                    .font(.system(.body, design: .monospaced))
-                    .foregroundColor(.orange)
-            }
-            .width(min: 60, ideal: 80)
-
-            TableColumn("Subject") { commit in
-                HStack(spacing: 4) {
-                    // Ref badges
-                    ForEach(refsForCommit(commit), id: \.self) { ref in
-                        let colors = refColors(for: ref)
-                        Text(ref.name)
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(colors.background)
-                            .foregroundColor(colors.text)
-                            .cornerRadius(3)
-                    }
-
-                    Text(commit.summary)
-                        .lineLimit(1)
-                }
-            }
-            .width(min: 200, ideal: 400)
-
-            TableColumn("Author", value: \.author)
-                .width(min: 100, ideal: 150)
-
-            TableColumn("Date") { commit in
-                Text(commit.date, style: .relative)
-            }
-            .width(min: 100, ideal: 150)
+        CommitTableView(
+            commits: filteredCommits,
+            graphLayouts: graphLayouts,
+            commitRefs: document.state.commitRefs,
+            selectedCommit: $selectedCommit
+        )
+        .onAppear {
+            computeGraphLayouts()
         }
-        .onChange(of: selectedCommitID) { _, newValue in
-            if let id = newValue {
-                selectedCommit = filteredCommits.first { $0.id == id }
-            } else {
-                selectedCommit = nil
+        .onChange(of: document.state.commits) { _, _ in
+            computeGraphLayouts()
+        }
+    }
+
+    private func computeGraphLayouts() {
+        // Compute on background thread
+        let commits = document.state.commits
+        DispatchQueue.global(qos: .userInitiated).async {
+            let layouts = CommitGraphComputer.computeLayout(for: commits)
+            DispatchQueue.main.async {
+                graphLayouts = layouts
             }
         }
     }
@@ -173,22 +152,6 @@ struct HistoryView: View {
         .background(Color(nsColor: .controlBackgroundColor))
     }
 
-    // MARK: - Helpers
-
-    private func refsForCommit(_ commit: CommitInfo) -> [RefInfo] {
-        return document.state.commitRefs[commit.oid] ?? []
-    }
-
-    private func refColors(for ref: RefInfo) -> (background: Color, text: Color) {
-        switch ref.type {
-        case .remoteBranch:
-            return (.purple, .white)
-        case .tag:
-            return (.yellow, .black)
-        case .localBranch:
-            return (.green, .black)
-        }
-    }
 }
 
 // MARK: - Commit Detail View

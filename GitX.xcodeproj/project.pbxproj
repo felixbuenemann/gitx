@@ -20,6 +20,8 @@
 		SW034 /* CommitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF034; };
 		SW035 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF035; };
 		SW036 /* PersistentSplitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF036; };
+		SW037 /* CommitGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF037; };
+		SW038 /* CommitTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF038; };
 		/* Resources */
 		RB001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = RF001; };
 		RB002 /* Credits.html in Resources */ = {isa = PBXBuildFile; fileRef = RF004; };
@@ -49,6 +51,8 @@
 		SF034 /* CommitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommitView.swift; sourceTree = "<group>"; };
 		SF035 /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
 		SF036 /* PersistentSplitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistentSplitView.swift; sourceTree = "<group>"; };
+		SF037 /* CommitGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommitGraphView.swift; sourceTree = "<group>"; };
+		SF038 /* CommitTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommitTableView.swift; sourceTree = "<group>"; };
 		/* Resources */
 		RF001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		RF002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -111,6 +115,8 @@
 				SF034 /* CommitView.swift */,
 				SF035 /* PreferencesView.swift */,
 				SF036 /* PersistentSplitView.swift */,
+				SF037 /* CommitGraphView.swift */,
+				SF038 /* CommitTableView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -267,6 +273,8 @@
 				SW034 /* CommitView.swift in Sources */,
 				SW035 /* PreferencesView.swift in Sources */,
 				SW036 /* PersistentSplitView.swift in Sources */,
+				SW037 /* CommitGraphView.swift in Sources */,
+				SW038 /* CommitTableView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
