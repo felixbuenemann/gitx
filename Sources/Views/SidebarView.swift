@@ -12,7 +12,7 @@ struct SidebarView: View {
     @Binding var selection: SidebarItem?
     var onSubmoduleSelected: ((SubmoduleInfo) -> Void)?
 
-    // Per-window expansion state
+    // Per-repository expansion state (persisted across app restarts)
     @State private var branchesExpanded = true
     @State private var remotesExpanded = true
     @State private var tagsExpanded = true
@@ -126,6 +126,41 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        .onAppear {
+            loadExpansionState()
+        }
+        .onChange(of: branchesExpanded) { _, _ in saveExpansionState() }
+        .onChange(of: remotesExpanded) { _, _ in saveExpansionState() }
+        .onChange(of: tagsExpanded) { _, _ in saveExpansionState() }
+        .onChange(of: stashesExpanded) { _, _ in saveExpansionState() }
+        .onChange(of: submodulesExpanded) { _, _ in saveExpansionState() }
+    }
+
+    // MARK: - Persistence
+
+    private func loadExpansionState() {
+        guard let url = state.url else { return }
+        let key = "sidebar.expansion.\(url.path)"
+        if let data = UserDefaults.standard.dictionary(forKey: key) {
+            branchesExpanded = data["branches"] as? Bool ?? true
+            remotesExpanded = data["remotes"] as? Bool ?? true
+            tagsExpanded = data["tags"] as? Bool ?? true
+            stashesExpanded = data["stashes"] as? Bool ?? true
+            submodulesExpanded = data["submodules"] as? Bool ?? true
+        }
+    }
+
+    private func saveExpansionState() {
+        guard let url = state.url else { return }
+        let key = "sidebar.expansion.\(url.path)"
+        let data: [String: Bool] = [
+            "branches": branchesExpanded,
+            "remotes": remotesExpanded,
+            "tags": tagsExpanded,
+            "stashes": stashesExpanded,
+            "submodules": submodulesExpanded
+        ]
+        UserDefaults.standard.set(data, forKey: key)
     }
 }
 
