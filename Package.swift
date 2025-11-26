@@ -14,19 +14,22 @@ let package = Package(
             targets: ["GitXCore"]
         )
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/ibrahimcetin/SwiftGitX", from: "0.2.0")
+    ],
     targets: [
         // Core library with Git functionality
         .target(
             name: "GitXCore",
-            dependencies: [],
+            dependencies: [
+                .product(name: "SwiftGitX", package: "SwiftGitX")
+            ],
             path: "Sources",
-            exclude: ["App"],
+            exclude: ["CLI"],
             sources: [
-                "Git",
+                "App",
                 "Utilities",
-                "Views",
-                "Controllers"
+                "Views"
             ]
         ),
         // Tests
