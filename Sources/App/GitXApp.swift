@@ -73,6 +73,120 @@ struct GitXApp: App {
     }
 }
 
+// MARK: - Window Frame Persistence
+
+struct WindowFrameModifier: ViewModifier {
+    let repositoryPath: String?
+
+    func body(content: Content) -> some View {
+        content
+            .background(WindowAccessor(repositoryPath: repositoryPath))
+    }
+}
+
+struct WindowAccessor: NSViewRepresentable {
+    let repositoryPath: String?
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            if let window = view.window {
+                context.coordinator.observeWindow(window)
+            }
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.repositoryPath = repositoryPath
+        if let window = nsView.window {
+            context.coordinator.observeWindow(window)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(repositoryPath: repositoryPath)
+    }
+
+    class Coordinator: NSObject {
+        var repositoryPath: String?
+        private var observedWindow: NSWindow?
+        private var frameObservation: NSObjectProtocol?
+        private var hasRestoredFrame = false
+
+        init(repositoryPath: String?) {
+            self.repositoryPath = repositoryPath
+            super.init()
+        }
+
+        deinit {
+            if let observation = frameObservation {
+                NotificationCenter.default.removeObserver(observation)
+            }
+        }
+
+        func observeWindow(_ window: NSWindow) {
+            guard observedWindow !== window else { return }
+            observedWindow = window
+
+            // Remove old observation
+            if let observation = frameObservation {
+                NotificationCenter.default.removeObserver(observation)
+            }
+
+            // Restore frame if we have a repository path
+            if !hasRestoredFrame, let path = repositoryPath {
+                hasRestoredFrame = true
+                restoreFrame(for: window, repositoryPath: path)
+            }
+
+            // Observe frame changes to save position
+            frameObservation = NotificationCenter.default.addObserver(
+                forName: NSWindow.didEndLiveResizeNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                self?.saveFrame()
+            }
+
+            // Also observe window move
+            let moveObservation = NotificationCenter.default.addObserver(
+                forName: NSWindow.didMoveNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                self?.saveFrame()
+            }
+
+            // Store move observation (we'll just let it live with the window)
+            _ = moveObservation
+        }
+
+        private func restoreFrame(for window: NSWindow, repositoryPath: String) {
+            let key = "window.frame.\(repositoryPath)"
+            guard let frameString = UserDefaults.standard.string(forKey: key) else { return }
+            let frame = NSRectFromString(frameString)
+            if frame.width > 0 && frame.height > 0 {
+                // Validate frame is on a visible screen
+                let screens = NSScreen.screens
+                let frameOnScreen = screens.contains { screen in
+                    screen.visibleFrame.intersects(frame)
+                }
+                if frameOnScreen {
+                    window.setFrame(frame, display: true)
+                }
+            }
+        }
+
+        private func saveFrame() {
+            guard let window = observedWindow, let path = repositoryPath else { return }
+            let key = "window.frame.\(path)"
+            let frameString = NSStringFromRect(window.frame)
+            UserDefaults.standard.set(frameString, forKey: key)
+        }
+    }
+}
+
 // MARK: - Main Window View
 
 struct MainWindowView: View {
@@ -138,6 +252,7 @@ struct MainWindowView: View {
         .sheet(isPresented: $showCloneSheet) {
             CloneRepositorySheet(isPresented: $showCloneSheet)
         }
+        .modifier(WindowFrameModifier(repositoryPath: document.state.url?.path))
     }
 
     private func showOpenPanel() {
