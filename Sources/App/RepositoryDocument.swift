@@ -1,0 +1,500 @@
+//
+//  RepositoryDocument.swift
+//  GitX
+//
+//  Document representing a Git repository
+//
+
+import SwiftUI
+import UniformTypeIdentifiers
+import SwiftGitX
+
+// MARK: - Repository Document
+
+final class RepositoryDocument: ReferenceFileDocument {
+    typealias Snapshot = RepositoryState
+
+    @Published var repository: Repository?
+    @Published var state: RepositoryState
+
+    static var readableContentTypes: [UTType] { [.folder] }
+
+    init() {
+        self.state = RepositoryState()
+        // Initialize SwiftGitX
+        try? SwiftGitX.initialize()
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        self.state = RepositoryState()
+
+        // Initialize SwiftGitX
+        try? SwiftGitX.initialize()
+
+        guard let url = configuration.file.filename.flatMap({ URL(fileURLWithPath: $0) }) else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+
+        try loadRepository(at: url)
+    }
+
+    func snapshot(contentType: UTType) throws -> RepositoryState {
+        return state
+    }
+
+    func fileWrapper(snapshot: RepositoryState, configuration: WriteConfiguration) throws -> FileWrapper {
+        // Git repositories are read-only from our perspective
+        throw CocoaError(.fileWriteNoPermission)
+    }
+
+    // MARK: - Repository Loading
+
+    func loadRepository(at url: URL) throws {
+        // Find git directory
+        let gitDir = findGitDirectory(at: url)
+
+        guard let repoPath = gitDir else {
+            throw NSError(
+                domain: "GitX",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Not a git repository"]
+            )
+        }
+
+        do {
+            repository = try Repository.open(at: repoPath)
+            state.url = repoPath
+            state.name = repoPath.lastPathComponent
+            refreshState()
+        } catch {
+            throw NSError(
+                domain: "GitX",
+                code: 2,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "Failed to open repository",
+                    NSUnderlyingErrorKey: error
+                ]
+            )
+        }
+    }
+
+    private func findGitDirectory(at url: URL) -> URL? {
+        var current = url
+        let fileManager = FileManager.default
+
+        // If pointing to .git directly
+        if current.lastPathComponent == ".git" {
+            return current.deletingLastPathComponent()
+        }
+
+        // Walk up to find .git
+        while current.path != "/" {
+            let gitDir = current.appendingPathComponent(".git")
+            if fileManager.fileExists(atPath: gitDir.path) {
+                return current
+            }
+            current = current.deletingLastPathComponent()
+        }
+
+        return nil
+    }
+
+    // MARK: - State Management
+
+    func refreshState() {
+        guard let repo = repository else { return }
+
+        Task {
+            do {
+                // Get current branch
+                let head = try repo.HEAD
+                let branchName: String
+                if let branch = head as? Branch {
+                    branchName = branch.name
+                } else {
+                    branchName = "HEAD (detached)"
+                }
+
+                // Get branches and build ref mapping
+                var branchNames: [String] = []
+                var commitRefs: [String: [RefInfo]] = [:]
+
+                for branch in repo.branch.local {
+                    branchNames.append(branch.name)
+                    // Get the commit this branch points to
+                    let commitOID = branch.target.id.hex
+                    let refInfo = RefInfo(name: branch.name, type: .localBranch)
+                    commitRefs[commitOID, default: []].append(refInfo)
+                }
+
+                // Get remote branches
+                for branch in repo.branch.remote {
+                    let commitOID = branch.target.id.hex
+                    let refInfo = RefInfo(name: branch.name, type: .remoteBranch)
+                    commitRefs[commitOID, default: []].append(refInfo)
+                }
+
+                // Get remotes
+                var remoteNames: [String] = []
+                for remote in repo.remote {
+                    remoteNames.append(remote.name)
+                }
+
+                // Get tags
+                var tagNames: [String] = []
+                for tag in repo.tag {
+                    tagNames.append(tag.name)
+                    // Get the commit this tag points to
+                    let commitOID = tag.target.id.hex
+                    let refInfo = RefInfo(name: tag.name, type: .tag)
+                    commitRefs[commitOID, default: []].append(refInfo)
+                }
+
+                // Load commits from selected branch or all
+                let commitInfos = loadCommitsSync(fromBranch: state.selectedBranch, limit: 1000)
+
+                await MainActor.run {
+                    state.currentBranch = branchName
+                    state.branches = branchNames
+                    state.remotes = remoteNames
+                    state.tags = tagNames
+                    state.commits = commitInfos
+                    state.commitRefs = commitRefs
+                }
+
+            } catch {
+                print("Error refreshing state: \(error)")
+            }
+        }
+    }
+
+    /// Load commits, optionally filtered by branch
+    func loadCommits(fromBranch branchName: String?) {
+        state.selectedBranch = branchName
+        let commits = loadCommitsSync(fromBranch: branchName, limit: 1000)
+        state.commits = commits
+    }
+
+    private func loadCommitsSync(fromBranch branchName: String? = nil, limit: Int = 1000) -> [CommitInfo] {
+        guard let repo = repository else { return [] }
+
+        var commits: [CommitInfo] = []
+
+        do {
+            let log: CommitSequence
+
+            if let branchName = branchName {
+                // Find the branch and log from it
+                if let branch = repo.branch.local.first(where: { $0.name == branchName }) {
+                    log = try repo.log(from: branch)
+                } else {
+                    // Branch not found, fall back to HEAD
+                    log = try repo.log()
+                }
+            } else {
+                // All branches - just use HEAD for now
+                log = try repo.log()
+            }
+            var count = 0
+
+            for commit in log {
+                if count >= limit { break }
+
+                // Get parent IDs
+                var parentIds: [String] = []
+                if let parents = try? commit.parents {
+                    parentIds = parents.map { $0.id.hex }
+                }
+
+                let info = CommitInfo(
+                    oid: commit.id.hex,
+                    shortOID: commit.id.abbreviated,
+                    message: commit.message,
+                    summary: commit.summary,
+                    author: commit.author.name,
+                    authorEmail: commit.author.email,
+                    date: commit.date,
+                    parents: parentIds
+                )
+                commits.append(info)
+                count += 1
+            }
+        } catch {
+            print("Error loading commits: \(error)")
+        }
+
+        return commits
+    }
+
+    // MARK: - Diff Support
+
+    /// Get the diff for a commit compared to its parent
+    func getDiff(for commitInfo: CommitInfo) -> DiffResult? {
+        guard let repo = repository else { return nil }
+
+        do {
+            // Look up the actual commit object by OID
+            let oid = try OID(hex: commitInfo.oid)
+            let commit: Commit = try repo.show(id: oid)
+
+            // Get diff comparing to parent
+            let diff = try repo.diff(commit: commit)
+
+            // Convert to our view model
+            var fileChanges: [FileChange] = []
+
+            for patch in diff.patches {
+                let delta = patch.delta
+                let filePath = delta.newFile.path.isEmpty ? delta.oldFile.path : delta.newFile.path
+
+                var hunks: [DiffHunk] = []
+                for hunk in patch.hunks {
+                    var lines: [DiffLine] = []
+                    for line in hunk.lines {
+                        let lineType: DiffLineType
+                        switch line.type {
+                        case .addition:
+                            lineType = .addition
+                        case .deletion:
+                            lineType = .deletion
+                        default:
+                            lineType = .context
+                        }
+                        lines.append(DiffLine(
+                            type: lineType,
+                            content: line.content,
+                            oldLineNumber: lineType == .addition ? nil : line.lineNumber,
+                            newLineNumber: lineType == .deletion ? nil : line.lineNumber
+                        ))
+                    }
+                    hunks.append(DiffHunk(
+                        header: hunk.header,
+                        oldStart: hunk.oldStart,
+                        oldLines: hunk.oldLines,
+                        newStart: hunk.newStart,
+                        newLines: hunk.newLines,
+                        lines: lines
+                    ))
+                }
+
+                let changeType: FileChangeType
+                switch delta.type {
+                case .added:
+                    changeType = .added
+                case .deleted:
+                    changeType = .deleted
+                case .modified:
+                    changeType = .modified
+                case .renamed:
+                    changeType = .renamed
+                case .copied:
+                    changeType = .copied
+                default:
+                    changeType = .modified
+                }
+
+                fileChanges.append(FileChange(
+                    path: filePath,
+                    oldPath: delta.oldFile.path,
+                    changeType: changeType,
+                    hunks: hunks,
+                    isBinary: delta.flags.contains(.binary)
+                ))
+            }
+
+            return DiffResult(files: fileChanges)
+        } catch {
+            print("Error getting diff: \(error)")
+            return nil
+        }
+    }
+
+    /// Get file content at a specific commit
+    func getFileContent(path: String, at commitInfo: CommitInfo) -> String? {
+        guard let repo = repository else { return nil }
+
+        do {
+            let oid = try OID(hex: commitInfo.oid)
+            let commit: Commit = try repo.show(id: oid)
+            let tree = try commit.tree
+
+            // Find the blob in the tree by searching entries
+            let pathComponents = path.components(separatedBy: "/")
+            var currentTree = tree
+
+            for (index, component) in pathComponents.enumerated() {
+                if let entry = currentTree.entries.first(where: { $0.name == component }) {
+                    if index == pathComponents.count - 1 {
+                        // This is the file - load the blob
+                        if entry.type == .blob {
+                            let blob: Blob = try repo.show(id: entry.id)
+                            return String(data: blob.content, encoding: .utf8)
+                        }
+                    } else {
+                        // This is a directory - load the subtree
+                        if entry.type == .tree {
+                            currentTree = try repo.show(id: entry.id)
+                        }
+                    }
+                }
+            }
+        } catch {
+            print("Error getting file content: \(error)")
+        }
+        return nil
+    }
+}
+
+// MARK: - Diff View Models
+
+struct DiffResult {
+    let files: [FileChange]
+}
+
+struct FileChange: Identifiable, Hashable {
+    let id = UUID()
+    let path: String
+    let oldPath: String
+    let changeType: FileChangeType
+    let hunks: [DiffHunk]
+    let isBinary: Bool
+
+    var displayPath: String {
+        if changeType == .renamed && oldPath != path {
+            return "\(oldPath) → \(path)"
+        }
+        return path
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(path)
+    }
+
+    static func == (lhs: FileChange, rhs: FileChange) -> Bool {
+        lhs.path == rhs.path
+    }
+}
+
+enum FileChangeType {
+    case added
+    case deleted
+    case modified
+    case renamed
+    case copied
+
+    var symbol: String {
+        switch self {
+        case .added: return "A"
+        case .deleted: return "D"
+        case .modified: return "M"
+        case .renamed: return "R"
+        case .copied: return "C"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .added: return .green
+        case .deleted: return .red
+        case .modified: return .orange
+        case .renamed: return .purple
+        case .copied: return .blue
+        }
+    }
+}
+
+struct DiffHunk: Identifiable {
+    let id = UUID()
+    let header: String
+    let oldStart: Int
+    let oldLines: Int
+    let newStart: Int
+    let newLines: Int
+    let lines: [DiffLine]
+}
+
+struct DiffLine: Identifiable {
+    let id = UUID()
+    let type: DiffLineType
+    let content: String
+    let oldLineNumber: Int?
+    let newLineNumber: Int?
+}
+
+enum DiffLineType {
+    case context
+    case addition
+    case deletion
+
+    var prefix: String {
+        switch self {
+        case .context: return " "
+        case .addition: return "+"
+        case .deletion: return "-"
+        }
+    }
+
+    var backgroundColor: Color {
+        switch self {
+        case .context: return .clear
+        case .addition: return Color.green.opacity(0.2)
+        case .deletion: return Color.red.opacity(0.2)
+        }
+    }
+
+    var textColor: Color {
+        switch self {
+        case .context: return .primary
+        case .addition: return .green
+        case .deletion: return .red
+        }
+    }
+}
+
+// MARK: - Repository State
+
+struct RepositoryState {
+    var url: URL?
+    var name: String = ""
+    var currentBranch: String = ""
+    var selectedBranch: String? = nil  // nil means show all/HEAD
+    var branches: [String] = []
+    var remotes: [String] = []
+    var tags: [String] = []
+    var commits: [CommitInfo] = []
+    var selectedCommit: CommitInfo?
+    var commitRefs: [String: [RefInfo]] = [:]  // OID -> refs pointing to it
+}
+
+struct RefInfo: Hashable {
+    let name: String
+    let type: RefType
+
+    enum RefType {
+        case localBranch
+        case remoteBranch
+        case tag
+    }
+}
+
+// MARK: - Commit Info
+
+struct CommitInfo: Identifiable, Hashable {
+    let id = UUID()
+    let oid: String
+    let shortOID: String
+    let message: String
+    let summary: String
+    let author: String
+    let authorEmail: String
+    let date: Date
+    let parents: [String]
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(oid)
+    }
+
+    static func == (lhs: CommitInfo, rhs: CommitInfo) -> Bool {
+        lhs.oid == rhs.oid
+    }
+}

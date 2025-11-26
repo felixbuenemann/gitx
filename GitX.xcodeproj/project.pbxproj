@@ -7,37 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		/* Swift Sources - Git */
-		SW001 /* GitBinary.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF001; };
-		SW002 /* GitCommit.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF002; };
-		SW003 /* GitDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF003; };
-		SW004 /* GitIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF004; };
-		SW005 /* GitRef.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF005; };
-		SW006 /* GitRefish.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF006; };
-		SW007 /* GitRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF007; };
-		SW008 /* GitRevSpecifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF008; };
-		SW009 /* GitTree.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF009; };
 		/* Swift Sources - Utilities */
-		SW010 /* EasyFS.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF010; };
-		SW011 /* EasyPipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF011; };
-		SW012 /* FileHandle+ReadLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF012; };
-		SW013 /* ModalRepoSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF013; };
-		SW014 /* OutlineView+ExpandParents.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF014; };
 		SW015 /* String+RegEx.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF015; };
 		SW016 /* String+Truncate.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF016; };
-		/* Swift Sources - Controllers */
-		SW017 /* DiffWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF017; };
-		SW018 /* IndexController.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF018; };
-		SW019 /* RepositoryWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF019; };
 		/* Swift Sources - Views */
-		SW020 /* CommitHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF020; };
-		SW021 /* DiffView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF021; };
 		SW022 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF022; };
 		/* Swift Sources - App */
-		SW023 /* ApplicationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF023; };
-		SW024 /* CloneRepositoryPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF024; };
 		SW025 /* GitXApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF025; };
-		SW026 /* PreferencesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF026; };
+		SW031 /* RepositoryDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF031; };
+		SW032 /* RepositoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF032; };
+		SW033 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF033; };
+		SW034 /* CommitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF034; };
+		SW035 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF035; };
+		SW036 /* PersistentSplitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF036; };
 		/* Resources */
 		RB001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = RF001; };
 		RB002 /* Credits.html in Resources */ = {isa = PBXBuildFile; fileRef = RF004; };
@@ -45,45 +27,28 @@
 		RB004 /* gitx.icns in Resources */ = {isa = PBXBuildFile; fileRef = RF006; };
 		RB005 /* source.css in Resources */ = {isa = PBXBuildFile; fileRef = RF007; };
 		RB006 /* Images in Resources */ = {isa = PBXBuildFile; fileRef = RF008; };
-		RB007 /* XIBs in Resources */ = {isa = PBXBuildFile; fileRef = RF009; };
 		/* Frameworks */
 		FB001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = PR001; };
+		FB002 /* SwiftGitX in Frameworks */ = {isa = PBXBuildFile; productRef = PR002; };
+		FB003 /* HighlightSwift in Frameworks */ = {isa = PBXBuildFile; productRef = PR003; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		/* Product */
 		PROD1 /* GitX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GitX.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		/* Swift Sources - Git */
-		SF001 /* GitBinary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitBinary.swift; sourceTree = "<group>"; };
-		SF002 /* GitCommit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitCommit.swift; sourceTree = "<group>"; };
-		SF003 /* GitDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitDefaults.swift; sourceTree = "<group>"; };
-		SF004 /* GitIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitIndex.swift; sourceTree = "<group>"; };
-		SF005 /* GitRef.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitRef.swift; sourceTree = "<group>"; };
-		SF006 /* GitRefish.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitRefish.swift; sourceTree = "<group>"; };
-		SF007 /* GitRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitRepository.swift; sourceTree = "<group>"; };
-		SF008 /* GitRevSpecifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitRevSpecifier.swift; sourceTree = "<group>"; };
-		SF009 /* GitTree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitTree.swift; sourceTree = "<group>"; };
 		/* Swift Sources - Utilities */
-		SF010 /* EasyFS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyFS.swift; sourceTree = "<group>"; };
-		SF011 /* EasyPipe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPipe.swift; sourceTree = "<group>"; };
-		SF012 /* FileHandle+ReadLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileHandle+ReadLine.swift"; sourceTree = "<group>"; };
-		SF013 /* ModalRepoSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalRepoSheet.swift; sourceTree = "<group>"; };
-		SF014 /* OutlineView+ExpandParents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OutlineView+ExpandParents.swift"; sourceTree = "<group>"; };
 		SF015 /* String+RegEx.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+RegEx.swift"; sourceTree = "<group>"; };
 		SF016 /* String+Truncate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Truncate.swift"; sourceTree = "<group>"; };
-		/* Swift Sources - Controllers */
-		SF017 /* DiffWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiffWindowController.swift; sourceTree = "<group>"; };
-		SF018 /* IndexController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexController.swift; sourceTree = "<group>"; };
-		SF019 /* RepositoryWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryWindowController.swift; sourceTree = "<group>"; };
 		/* Swift Sources - Views */
-		SF020 /* CommitHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommitHistoryView.swift; sourceTree = "<group>"; };
-		SF021 /* DiffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiffView.swift; sourceTree = "<group>"; };
 		SF022 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		/* Swift Sources - App */
-		SF023 /* ApplicationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationController.swift; sourceTree = "<group>"; };
-		SF024 /* CloneRepositoryPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloneRepositoryPanel.swift; sourceTree = "<group>"; };
 		SF025 /* GitXApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitXApp.swift; sourceTree = "<group>"; };
-		SF026 /* PreferencesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesController.swift; sourceTree = "<group>"; };
+		SF031 /* RepositoryDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryDocument.swift; sourceTree = "<group>"; };
+		SF032 /* RepositoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryView.swift; sourceTree = "<group>"; };
+		SF033 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		SF034 /* CommitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommitView.swift; sourceTree = "<group>"; };
+		SF035 /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
+		SF036 /* PersistentSplitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistentSplitView.swift; sourceTree = "<group>"; };
 		/* Resources */
 		RF001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		RF002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -93,7 +58,6 @@
 		RF006 /* gitx.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = gitx.icns; sourceTree = "<group>"; };
 		RF007 /* source.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = source.css; sourceTree = "<group>"; };
 		RF008 /* Images */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Images; sourceTree = "<group>"; };
-		RF009 /* XIBs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = XIBs; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +66,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				FB001 /* Sparkle in Frameworks */,
+				FB002 /* SwiftGitX in Frameworks */,
+				FB003 /* HighlightSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -120,61 +86,31 @@
 		GRP001 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				GRP002 /* Git */,
 				GRP003 /* Utilities */,
-				GRP004 /* Controllers */,
 				GRP005 /* Views */,
 				GRP008 /* App */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
 		};
-		GRP002 /* Git */ = {
-			isa = PBXGroup;
-			children = (
-				SF001 /* GitBinary.swift */,
-				SF002 /* GitCommit.swift */,
-				SF003 /* GitDefaults.swift */,
-				SF004 /* GitIndex.swift */,
-				SF005 /* GitRef.swift */,
-				SF006 /* GitRefish.swift */,
-				SF007 /* GitRepository.swift */,
-				SF008 /* GitRevSpecifier.swift */,
-				SF009 /* GitTree.swift */,
-			);
-			path = Git;
-			sourceTree = "<group>";
-		};
 		GRP003 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
-				SF010 /* EasyFS.swift */,
-				SF011 /* EasyPipe.swift */,
-				SF012 /* FileHandle+ReadLine.swift */,
-				SF013 /* ModalRepoSheet.swift */,
-				SF014 /* OutlineView+ExpandParents.swift */,
 				SF015 /* String+RegEx.swift */,
 				SF016 /* String+Truncate.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
 		};
-		GRP004 /* Controllers */ = {
-			isa = PBXGroup;
-			children = (
-				SF017 /* DiffWindowController.swift */,
-				SF018 /* IndexController.swift */,
-				SF019 /* RepositoryWindowController.swift */,
-			);
-			path = Controllers;
-			sourceTree = "<group>";
-		};
 		GRP005 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				SF020 /* CommitHistoryView.swift */,
-				SF021 /* DiffView.swift */,
 				SF022 /* SidebarView.swift */,
+				SF032 /* RepositoryView.swift */,
+				SF033 /* HistoryView.swift */,
+				SF034 /* CommitView.swift */,
+				SF035 /* PreferencesView.swift */,
+				SF036 /* PersistentSplitView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -190,7 +126,6 @@
 				RF006 /* gitx.icns */,
 				RF007 /* source.css */,
 				RF008 /* Images */,
-				RF009 /* XIBs */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -206,10 +141,8 @@
 		GRP008 /* App */ = {
 			isa = PBXGroup;
 			children = (
-				SF023 /* ApplicationController.swift */,
-				SF024 /* CloneRepositoryPanel.swift */,
 				SF025 /* GitXApp.swift */,
-				SF026 /* PreferencesController.swift */,
+				SF031 /* RepositoryDocument.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -258,6 +191,8 @@
 			name = GitX;
 			packageProductDependencies = (
 				PR001 /* Sparkle */,
+				PR002 /* SwiftGitX */,
+				PR003 /* HighlightSwift */,
 			);
 			productName = GitX;
 			productReference = PROD1 /* GitX.app */;
@@ -289,6 +224,8 @@
 			mainGroup = ROOT;
 			packageReferences = (
 				PKG001 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				PKG002 /* XCRemoteSwiftPackageReference "SwiftGitX" */,
+				PKG003 /* XCRemoteSwiftPackageReference "HighlightSwift" */,
 			);
 			productRefGroup = GRP007 /* Products */;
 			projectDirPath = "";
@@ -310,7 +247,6 @@
 				RB004 /* gitx.icns in Resources */,
 				RB005 /* source.css in Resources */,
 				RB006 /* Images in Resources */,
-				RB007 /* XIBs in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -321,32 +257,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				SW001 /* GitBinary.swift in Sources */,
-				SW002 /* GitCommit.swift in Sources */,
-				SW003 /* GitDefaults.swift in Sources */,
-				SW004 /* GitIndex.swift in Sources */,
-				SW005 /* GitRef.swift in Sources */,
-				SW006 /* GitRefish.swift in Sources */,
-				SW007 /* GitRepository.swift in Sources */,
-				SW008 /* GitRevSpecifier.swift in Sources */,
-				SW009 /* GitTree.swift in Sources */,
-				SW010 /* EasyFS.swift in Sources */,
-				SW011 /* EasyPipe.swift in Sources */,
-				SW012 /* FileHandle+ReadLine.swift in Sources */,
-				SW013 /* ModalRepoSheet.swift in Sources */,
-				SW014 /* OutlineView+ExpandParents.swift in Sources */,
 				SW015 /* String+RegEx.swift in Sources */,
 				SW016 /* String+Truncate.swift in Sources */,
-				SW017 /* DiffWindowController.swift in Sources */,
-				SW018 /* IndexController.swift in Sources */,
-				SW019 /* RepositoryWindowController.swift in Sources */,
-				SW020 /* CommitHistoryView.swift in Sources */,
-				SW021 /* DiffView.swift in Sources */,
 				SW022 /* SidebarView.swift in Sources */,
-				SW023 /* ApplicationController.swift in Sources */,
-				SW024 /* CloneRepositoryPanel.swift in Sources */,
 				SW025 /* GitXApp.swift in Sources */,
-				SW026 /* PreferencesController.swift in Sources */,
+				SW031 /* RepositoryDocument.swift in Sources */,
+				SW032 /* RepositoryView.swift in Sources */,
+				SW033 /* HistoryView.swift in Sources */,
+				SW034 /* CommitView.swift in Sources */,
+				SW035 /* PreferencesView.swift in Sources */,
+				SW036 /* PersistentSplitView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -557,6 +477,22 @@
 				minimumVersion = 2.0.0;
 			};
 		};
+		PKG002 /* XCRemoteSwiftPackageReference "SwiftGitX" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ibrahimcetin/SwiftGitX";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.0;
+			};
+		};
+		PKG003 /* XCRemoteSwiftPackageReference "HighlightSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/appstefan/HighlightSwift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -564,6 +500,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = PKG001 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
+		};
+		PR002 /* SwiftGitX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = PKG002 /* XCRemoteSwiftPackageReference "SwiftGitX" */;
+			productName = SwiftGitX;
+		};
+		PR003 /* HighlightSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = PKG003 /* XCRemoteSwiftPackageReference "HighlightSwift" */;
+			productName = HighlightSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

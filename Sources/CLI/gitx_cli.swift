@@ -160,6 +160,7 @@ func findGitRepository(from url: URL) -> URL? {
 func workingDirectoryURL(_ arguments: inout [String]) -> URL? {
     let gitDirPrefix = "--git-dir="
 
+    // Check for --git-dir= option
     if let first = arguments.first, first.hasPrefix(gitDirPrefix) {
         let path = String(first.dropFirst(gitDirPrefix.count))
         arguments.removeFirst()
@@ -172,6 +173,24 @@ func workingDirectoryURL(_ arguments: inout [String]) -> URL? {
         return URL(fileURLWithPath: path)
     }
 
+    // Check if first argument is a path (not an option starting with -)
+    if let first = arguments.first, !first.hasPrefix("-") {
+        let expandedPath = NSString(string: first).expandingTildeInPath
+        var isDir: ObjCBool = false
+        if FileManager.default.fileExists(atPath: expandedPath, isDirectory: &isDir) {
+            arguments.removeFirst()
+            let url = URL(fileURLWithPath: expandedPath)
+            if let repoURL = findGitRepository(from: url) {
+                return repoURL
+            }
+            // Not a git repo, but path exists - return it anyway
+            if isDir.boolValue {
+                return url
+            }
+        }
+    }
+
+    // Fall back to current working directory
     guard let pwd = ProcessInfo.processInfo.environment["PWD"] else {
         return nil
     }
@@ -229,11 +248,41 @@ func handleDiff(repositoryURL: URL, arguments: [String]) -> Never {
     exit(0)
 }
 
+// Find the GitX.app bundle that contains this CLI tool
+func findGitXApp() -> URL? {
+    // This CLI tool is at GitX.app/Contents/Resources/gitx
+    // So we need to go up 3 levels to get to GitX.app
+    let executablePath = CommandLine.arguments[0]
+    let executableURL = URL(fileURLWithPath: executablePath).standardized
+
+    // Walk up to find the .app bundle
+    var current = executableURL.deletingLastPathComponent()
+    for _ in 0..<5 {
+        if current.pathExtension == "app" {
+            return current
+        }
+        current = current.deletingLastPathComponent()
+    }
+
+    // Fallback to /Applications/GitX.app
+    let fallback = URL(fileURLWithPath: "/Applications/GitX.app")
+    if FileManager.default.fileExists(atPath: fallback.path) {
+        return fallback
+    }
+
+    return nil
+}
+
 func handleOpenRepository(repositoryURL: URL, arguments: [String]) {
+    guard let gitxApp = findGitXApp() else {
+        print("Could not find GitX.app")
+        exit(2)
+    }
+
     // Open the repository in GitX
     NSWorkspace.shared.open(
         [repositoryURL],
-        withApplicationAt: URL(fileURLWithPath: "/Applications/GitX.app"),
+        withApplicationAt: gitxApp,
         configuration: NSWorkspace.OpenConfiguration()
     ) { _, error in
         if let error = error {

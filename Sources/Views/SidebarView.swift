@@ -2,204 +2,97 @@
 //  SidebarView.swift
 //  GitX
 //
-//  Sidebar view for repository navigation
+//  Repository sidebar with branches, remotes, tags, etc.
 //
 
-import AppKit
+import SwiftUI
 
-@objc public class SidebarView: NSView {
+struct SidebarView: View {
+    let state: RepositoryState
+    @Binding var selection: SidebarItem?
 
-    // MARK: - Properties
+    var body: some View {
+        List(selection: $selection) {
+            // Repository header
+            Section {
+                Label(state.name.isEmpty ? "Repository" : state.name.uppercased(), systemImage: "folder.fill")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+            }
 
-    @objc public weak var repository: GitRepository?
-    private var outlineView: NSOutlineView!
-    private var scrollView: NSScrollView!
+            // Stage
+            Label("Stage", systemImage: "tray.and.arrow.up")
+                .tag(SidebarItem.stage)
 
-    private var rootItems: [SidebarItem] = []
-
-    // MARK: - Initialization
-
-    public override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        setupViews()
-    }
-
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setupViews()
-    }
-
-    // MARK: - Setup
-
-    private func setupViews() {
-        scrollView = NSScrollView(frame: bounds)
-        scrollView.autoresizingMask = [.width, .height]
-        scrollView.hasVerticalScroller = true
-
-        outlineView = NSOutlineView(frame: bounds)
-        outlineView.headerView = nil
-        outlineView.indentationPerLevel = 16
-
-        let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("main"))
-        column.width = bounds.width
-        outlineView.addTableColumn(column)
-        outlineView.outlineTableColumn = column
-
-        outlineView.delegate = self
-        outlineView.dataSource = self
-
-        scrollView.documentView = outlineView
-        addSubview(scrollView)
-    }
-
-    // MARK: - Public Methods
-
-    @objc public func reloadData() {
-        buildSidebarItems()
-        outlineView.reloadData()
-        outlineView.expandItem(nil, expandChildren: true)
-    }
-
-    private func buildSidebarItems() {
-        rootItems = []
-
-        guard let repo = repository else { return }
-
-        // Branches section
-        let branchesItem = SidebarItem(title: "Branches", isGroup: true)
-        for branch in repo.branches where branch.ref?.isBranch == true {
-            let item = SidebarItem(title: branch.ref?.shortName ?? "", isGroup: false)
-            item.revSpecifier = branch
-            branchesItem.children.append(item)
-        }
-        if !branchesItem.children.isEmpty {
-            rootItems.append(branchesItem)
-        }
-
-        // Remotes section
-        let remotesItem = SidebarItem(title: "Remotes", isGroup: true)
-        var remoteGroups: [String: SidebarItem] = [:]
-
-        for branch in repo.branches where branch.ref?.isRemoteBranch == true {
-            if let remoteName = branch.ref?.remoteName {
-                if remoteGroups[remoteName] == nil {
-                    let remoteItem = SidebarItem(title: remoteName, isGroup: true)
-                    remoteGroups[remoteName] = remoteItem
+            // Branches
+            Section("BRANCHES") {
+                ForEach(state.branches, id: \.self) { branch in
+                    HStack {
+                        Image(systemName: branch == state.currentBranch ? "checkmark.circle.fill" : "arrow.triangle.branch")
+                            .foregroundColor(branch == state.currentBranch ? .green : .secondary)
+                        Text(branch)
+                            .fontWeight(branch == state.currentBranch ? .semibold : .regular)
+                    }
+                    .tag(SidebarItem.branch(branch))
                 }
-                let item = SidebarItem(title: branch.ref?.remoteBranchName ?? "", isGroup: false)
-                item.revSpecifier = branch
-                remoteGroups[remoteName]?.children.append(item)
+            }
+
+            // Remotes
+            if !state.remotes.isEmpty {
+                Section("REMOTES") {
+                    ForEach(state.remotes, id: \.self) { remote in
+                        Label(remote, systemImage: "network")
+                            .tag(SidebarItem.remote(remote))
+                    }
+                }
+            }
+
+            // Tags
+            if !state.tags.isEmpty {
+                Section("TAGS") {
+                    ForEach(state.tags, id: \.self) { tag in
+                        Label(tag, systemImage: "tag")
+                            .tag(SidebarItem.tag(tag))
+                    }
+                }
+            }
+
+            // Stashes (placeholder)
+            Section("STASHES") {
+                Text("No stashes")
+                    .foregroundColor(.secondary)
+                    .font(.caption)
+            }
+
+            // Submodules (placeholder)
+            Section("SUBMODULES") {
+                Text("No submodules")
+                    .foregroundColor(.secondary)
+                    .font(.caption)
+            }
+
+            // Other
+            Section("OTHER") {
+                Label("Other", systemImage: "ellipsis.circle")
+                    .tag(SidebarItem.other)
             }
         }
-
-        for (_, remoteItem) in remoteGroups.sorted(by: { $0.key < $1.key }) {
-            remotesItem.children.append(remoteItem)
-        }
-        if !remotesItem.children.isEmpty {
-            rootItems.append(remotesItem)
-        }
-
-        // Tags section
-        let tagsItem = SidebarItem(title: "Tags", isGroup: true)
-        for branch in repo.branches where branch.ref?.isTag == true {
-            let item = SidebarItem(title: branch.ref?.shortName ?? "", isGroup: false)
-            item.revSpecifier = branch
-            tagsItem.children.append(item)
-        }
-        if !tagsItem.children.isEmpty {
-            rootItems.append(tagsItem)
-        }
+        .listStyle(.sidebar)
     }
 }
 
-// MARK: - Sidebar Item
+// MARK: - Preview
 
-public class SidebarItem: NSObject, ParentAccessible {
-    @objc public var title: String
-    @objc public var isGroup: Bool
-    @objc public var children: [SidebarItem] = []
-    @objc public var revSpecifier: GitRevSpecifier?
-    @objc public weak var parentItem: SidebarItem?
-
-    public var parent: ParentAccessible? {
-        return parentItem
-    }
-
-    public init(title: String, isGroup: Bool) {
-        self.title = title
-        self.isGroup = isGroup
-        super.init()
-    }
-}
-
-// MARK: - NSOutlineViewDataSource
-
-extension SidebarView: NSOutlineViewDataSource {
-    public func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
-        if item == nil {
-            return rootItems.count
-        }
-        if let sidebarItem = item as? SidebarItem {
-            return sidebarItem.children.count
-        }
-        return 0
-    }
-
-    public func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
-        if item == nil {
-            return rootItems[index]
-        }
-        if let sidebarItem = item as? SidebarItem {
-            return sidebarItem.children[index]
-        }
-        return NSNull()
-    }
-
-    public func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
-        if let sidebarItem = item as? SidebarItem {
-            return !sidebarItem.children.isEmpty
-        }
-        return false
-    }
-}
-
-// MARK: - NSOutlineViewDelegate
-
-extension SidebarView: NSOutlineViewDelegate {
-    public func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
-        guard let sidebarItem = item as? SidebarItem else { return nil }
-
-        let identifier = NSUserInterfaceItemIdentifier("SidebarCell")
-        var cellView = outlineView.makeView(withIdentifier: identifier, owner: self) as? NSTableCellView
-
-        if cellView == nil {
-            cellView = NSTableCellView()
-            cellView?.identifier = identifier
-
-            let textField = NSTextField(labelWithString: "")
-            textField.frame = NSRect(x: 0, y: 0, width: 200, height: 17)
-            textField.autoresizingMask = [.width]
-            cellView?.addSubview(textField)
-            cellView?.textField = textField
-        }
-
-        cellView?.textField?.stringValue = sidebarItem.title
-
-        if sidebarItem.isGroup {
-            cellView?.textField?.font = NSFont.boldSystemFont(ofSize: 11)
-            cellView?.textField?.textColor = .secondaryLabelColor
-        } else {
-            cellView?.textField?.font = NSFont.systemFont(ofSize: 13)
-            cellView?.textField?.textColor = .labelColor
-        }
-
-        return cellView
-    }
-
-    public func outlineView(_ outlineView: NSOutlineView, isGroupItem item: Any) -> Bool {
-        if let sidebarItem = item as? SidebarItem {
-            return sidebarItem.isGroup && sidebarItem.parentItem == nil
-        }
-        return false
-    }
+#Preview {
+    SidebarView(
+        state: RepositoryState(
+            name: "GitX",
+            currentBranch: "main",
+            branches: ["main", "develop", "feature/new-ui"],
+            remotes: ["origin"],
+            tags: ["v1.0", "v1.1", "v2.0"]
+        ),
+        selection: .constant(.history)
+    )
+    .frame(width: 220)
 }
