@@ -10,14 +10,15 @@ import SwiftUI
 struct SidebarView: View {
     let state: RepositoryState
     @Binding var selection: SidebarItem?
+    var onSubmoduleSelected: ((SubmoduleInfo) -> Void)?
 
-    // Persist expansion state
-    @AppStorage("sidebar.branchesExpanded") private var branchesExpanded = true
-    @AppStorage("sidebar.remotesExpanded") private var remotesExpanded = true
-    @AppStorage("sidebar.tagsExpanded") private var tagsExpanded = true
-    @AppStorage("sidebar.stashesExpanded") private var stashesExpanded = true
-    @AppStorage("sidebar.submodulesExpanded") private var submodulesExpanded = true
-    @AppStorage("sidebar.otherExpanded") private var otherExpanded = true
+    // Per-window expansion state
+    @State private var branchesExpanded = true
+    @State private var remotesExpanded = true
+    @State private var tagsExpanded = true
+    @State private var stashesExpanded = true
+    @State private var submodulesExpanded = true
+    @State private var otherExpanded = true
 
     var body: some View {
         List(selection: $selection) {
@@ -97,11 +98,30 @@ struct SidebarView: View {
                 Label("STASHES", systemImage: "tray.2")
             }
 
-            // Submodules (placeholder)
+            // Submodules
             Section(isExpanded: $submodulesExpanded) {
-                Text("No submodules")
-                    .foregroundColor(.secondary)
-                    .font(.caption)
+                if state.submodules.isEmpty {
+                    Text("No submodules")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                } else {
+                    ForEach(state.submodules) { submodule in
+                        Button {
+                            if submodule.isCheckedOut {
+                                onSubmoduleSelected?(submodule)
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: submodule.isCheckedOut ? "folder.fill" : "folder")
+                                    .foregroundColor(submodule.isCheckedOut ? .accentColor : .secondary)
+                                Text(submodule.name)
+                                    .foregroundColor(submodule.isCheckedOut ? .primary : .secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!submodule.isCheckedOut)
+                    }
+                }
             } header: {
                 Label("SUBMODULES", systemImage: "folder.badge.gearshape")
             }

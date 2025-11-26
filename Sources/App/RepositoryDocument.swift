@@ -164,6 +164,9 @@ final class RepositoryDocument: ReferenceFileDocument {
                     }
                 }
 
+                // Get submodules
+                let submoduleInfos = self.loadSubmodules()
+
                 // Load commits from selected branch or all
                 let commitInfos = loadCommitsSync(fromBranch: state.selectedBranch, limit: 1000)
 
@@ -173,6 +176,7 @@ final class RepositoryDocument: ReferenceFileDocument {
                     state.remotes = remoteNames
                     state.tags = tagNames
                     state.stashes = stashInfos
+                    state.submodules = submoduleInfos
                     state.commits = commitInfos
                     state.commitRefs = commitRefs
                 }
@@ -181,6 +185,75 @@ final class RepositoryDocument: ReferenceFileDocument {
                 print("Error refreshing state: \(error)")
             }
         }
+    }
+
+    // MARK: - Submodule Loading
+
+    /// Parse .gitmodules file and check which submodules are checked out
+    private func loadSubmodules() -> [SubmoduleInfo] {
+        guard let repoURL = state.url else { return [] }
+
+        let gitmodulesURL = repoURL.appendingPathComponent(".gitmodules")
+        guard let content = try? String(contentsOf: gitmodulesURL, encoding: .utf8) else {
+            return []
+        }
+
+        var submodules: [SubmoduleInfo] = []
+        var currentName: String?
+        var currentPath: String?
+        var currentURL: String?
+
+        for line in content.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed.hasPrefix("[submodule ") {
+                // Save previous submodule if complete
+                if let name = currentName, let path = currentPath, let url = currentURL {
+                    let submodulePath = repoURL.appendingPathComponent(path)
+                    let isCheckedOut = isSubmoduleCheckedOut(at: submodulePath)
+                    submodules.append(SubmoduleInfo(
+                        name: name,
+                        path: path,
+                        url: url,
+                        isCheckedOut: isCheckedOut
+                    ))
+                }
+
+                // Parse new submodule name
+                let start = trimmed.index(trimmed.startIndex, offsetBy: 12) // "[submodule \""
+                if let end = trimmed.lastIndex(of: "\"") {
+                    currentName = String(trimmed[start..<end])
+                }
+                currentPath = nil
+                currentURL = nil
+            } else if trimmed.hasPrefix("path = ") {
+                currentPath = String(trimmed.dropFirst(7))
+            } else if trimmed.hasPrefix("url = ") {
+                currentURL = String(trimmed.dropFirst(6))
+            }
+        }
+
+        // Don't forget the last submodule
+        if let name = currentName, let path = currentPath, let url = currentURL {
+            let submodulePath = repoURL.appendingPathComponent(path)
+            let isCheckedOut = isSubmoduleCheckedOut(at: submodulePath)
+            submodules.append(SubmoduleInfo(
+                name: name,
+                path: path,
+                url: url,
+                isCheckedOut: isCheckedOut
+            ))
+        }
+
+        return submodules
+    }
+
+    /// Check if a submodule is checked out by looking for .git in the submodule directory
+    private func isSubmoduleCheckedOut(at url: URL) -> Bool {
+        let fileManager = FileManager.default
+        let gitPath = url.appendingPathComponent(".git").path
+        // .git can be a file (gitdir reference) or directory
+        return fileManager.fileExists(atPath: gitPath)
     }
 
     /// Load commits, optionally filtered by branch
@@ -477,9 +550,29 @@ struct RepositoryState {
     var remotes: [String] = []
     var tags: [String] = []
     var stashes: [StashInfo] = []
+    var submodules: [SubmoduleInfo] = []
     var commits: [CommitInfo] = []
     var selectedCommit: CommitInfo?
     var commitRefs: [String: [RefInfo]] = [:]  // OID -> refs pointing to it
+}
+
+// MARK: - Submodule Info
+
+struct SubmoduleInfo: Identifiable, Hashable {
+    let name: String
+    let path: String
+    let url: String
+    let isCheckedOut: Bool
+
+    var id: String { name }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(name)
+    }
+
+    static func == (lhs: SubmoduleInfo, rhs: SubmoduleInfo) -> Bool {
+        lhs.name == rhs.name
+    }
 }
 
 // MARK: - Stash Info

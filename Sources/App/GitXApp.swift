@@ -11,11 +11,12 @@ import SwiftGitX
 @main
 struct GitXApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environmentObject(AppState.shared)
+        // Main window - shows welcome or repo based on pending URL
+        WindowGroup("GitX", id: "main", for: URL.self) { $url in
+            MainWindowView(initialURL: url)
         }
         .commands {
             CommandGroup(replacing: .newItem) {
@@ -25,7 +26,7 @@ struct GitXApp: App {
                 .keyboardShortcut("o", modifiers: .command)
 
                 Button("Clone Repository...") {
-                    AppState.shared.showCloneSheet = true
+                    // TODO: Implement clone sheet
                 }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
 
@@ -35,22 +36,18 @@ struct GitXApp: App {
             // Repository menu
             CommandMenu("Repository") {
                 Button("Refresh") {
-                    AppState.shared.document?.refreshState()
+                    NotificationCenter.default.post(name: .refreshRepository, object: nil)
                 }
                 .keyboardShortcut("r", modifiers: .command)
 
                 Divider()
 
                 Button("Reveal in Finder") {
-                    if let url = AppState.shared.document?.state.url {
-                        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: url.path)
-                    }
+                    NotificationCenter.default.post(name: .revealInFinder, object: nil)
                 }
 
                 Button("Open in Terminal") {
-                    if let url = AppState.shared.document?.state.url {
-                        AppState.shared.openInTerminal(url)
-                    }
+                    NotificationCenter.default.post(name: .openInTerminal, object: nil)
                 }
             }
 
@@ -59,12 +56,12 @@ struct GitXApp: App {
                 Divider()
 
                 Button("History") {
-                    AppState.shared.selectedView = .history
+                    NotificationCenter.default.post(name: .showHistoryView, object: nil)
                 }
                 .keyboardShortcut("1", modifiers: .command)
 
                 Button("Commit") {
-                    AppState.shared.selectedView = .commit
+                    NotificationCenter.default.post(name: .showCommitView, object: nil)
                 }
                 .keyboardShortcut("2", modifiers: .command)
             }
@@ -76,21 +73,93 @@ struct GitXApp: App {
     }
 }
 
-// MARK: - Content View
+// MARK: - Main Window View
 
-struct ContentView: View {
-    @EnvironmentObject var appState: AppState
+struct MainWindowView: View {
+    let initialURL: URL?
+    @StateObject private var document = RepositoryDocument()
+    @State private var loadError: String?
+    @State private var hasLoaded = false
+    @State private var showCloneSheet = false
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Group {
-            if appState.document != nil {
-                RepositoryView(document: appState.document!)
+            if let error = loadError {
+                // Error view
+                VStack {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.largeTitle)
+                        .foregroundColor(.red)
+                    Text("Failed to open repository")
+                        .font(.headline)
+                    Text(error)
+                        .foregroundColor(.secondary)
+                    Button("Open Another Repository...") {
+                        showOpenPanel()
+                    }
+                    .padding(.top)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if document.state.url != nil {
+                // Repository view
+                RepositoryView(document: document)
             } else {
-                WelcomeView()
+                // Welcome view
+                WelcomeView(onOpenRepository: { url in
+                    loadRepository(at: url)
+                })
             }
         }
-        .sheet(isPresented: $appState.showCloneSheet) {
-            CloneRepositorySheet()
+        .onAppear {
+            if !hasLoaded {
+                hasLoaded = true
+                if let url = initialURL {
+                    // We have an initial URL from WindowGroup
+                    loadRepository(at: url)
+                } else if let pendingURL = AppDelegate.pendingURLs.first {
+                    // Claim a pending URL
+                    AppDelegate.pendingURLs.removeFirst()
+                    loadRepository(at: pendingURL)
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openRepositoryInWindow)) { notification in
+            guard let url = notification.object as? URL else { return }
+
+            if document.state.url == nil {
+                // This window has no repo - load it here
+                // Remove from pending if present
+                AppDelegate.pendingURLs.removeAll { $0 == url }
+                loadRepository(at: url)
+            }
+            // Windows with repos don't respond - opening new windows is handled directly
+        }
+        .sheet(isPresented: $showCloneSheet) {
+            CloneRepositorySheet(isPresented: $showCloneSheet)
+        }
+    }
+
+    private func showOpenPanel() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "Select a Git repository"
+        panel.prompt = "Open"
+
+        if panel.runModal() == .OK, let url = panel.url {
+            loadRepository(at: url)
+        }
+    }
+
+    private func loadRepository(at url: URL) {
+        do {
+            try document.loadRepository(at: url)
+            loadError = nil
+            AppState.shared.addToRecentRepositories(url)
+        } catch {
+            loadError = error.localizedDescription
         }
     }
 }
@@ -98,8 +167,9 @@ struct ContentView: View {
 // MARK: - Welcome View
 
 struct WelcomeView: View {
-    @EnvironmentObject var appState: AppState
+    var onOpenRepository: ((URL) -> Void)?
     @State private var recentRepositories: [URL] = []
+    @State private var showCloneSheet = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -121,7 +191,7 @@ struct WelcomeView: View {
                 }
 
                 VStack(spacing: 12) {
-                    Button(action: { appState.showOpenPanel() }) {
+                    Button(action: { showOpenPanel() }) {
                         HStack {
                             Image(systemName: "folder")
                             Text("Open Repository...")
@@ -131,7 +201,7 @@ struct WelcomeView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
 
-                    Button(action: { appState.showCloneSheet = true }) {
+                    Button(action: { showCloneSheet = true }) {
                         HStack {
                             Image(systemName: "arrow.down.circle")
                             Text("Clone Repository...")
@@ -164,7 +234,7 @@ struct WelcomeView: View {
                     .frame(maxWidth: .infinity)
                 } else {
                     List(recentRepositories, id: \.self) { url in
-                        Button(action: { appState.openRepository(at: url) }) {
+                        Button(action: { onOpenRepository?(url) }) {
                             HStack {
                                 Image(systemName: "folder.fill")
                                     .foregroundColor(.accentColor)
@@ -189,6 +259,22 @@ struct WelcomeView: View {
         .onAppear {
             loadRecentRepositories()
         }
+        .sheet(isPresented: $showCloneSheet) {
+            CloneRepositorySheet(isPresented: $showCloneSheet)
+        }
+    }
+
+    private func showOpenPanel() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "Select a Git repository"
+        panel.prompt = "Open"
+
+        if panel.runModal() == .OK, let url = panel.url {
+            onOpenRepository?(url)
+        }
     }
 
     private func loadRecentRepositories() {
@@ -202,7 +288,7 @@ struct WelcomeView: View {
 // MARK: - Clone Repository Sheet
 
 struct CloneRepositorySheet: View {
-    @EnvironmentObject var appState: AppState
+    @Binding var isPresented: Bool
     @State private var remoteURL = ""
     @State private var localPath = ""
     @State private var isCloning = false
@@ -227,7 +313,7 @@ struct CloneRepositorySheet: View {
 
             HStack {
                 Button("Cancel") {
-                    appState.showCloneSheet = false
+                    isPresented = false
                 }
                 .keyboardShortcut(.cancelAction)
 
@@ -235,7 +321,7 @@ struct CloneRepositorySheet: View {
 
                 Button("Clone") {
                     // TODO: Implement cloning
-                    appState.showCloneSheet = false
+                    isPresented = false
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(remoteURL.isEmpty || localPath.isEmpty)
@@ -263,15 +349,6 @@ struct CloneRepositorySheet: View {
 class AppState: ObservableObject {
     static let shared = AppState()
 
-    @Published var document: RepositoryDocument?
-    @Published var showCloneSheet = false
-    @Published var selectedView: ViewMode = .history
-
-    enum ViewMode {
-        case history
-        case commit
-    }
-
     init() {
         // Initialize SwiftGitX
         try? SwiftGitX.initialize()
@@ -291,22 +368,11 @@ class AppState: ObservableObject {
     }
 
     func openRepository(at url: URL) {
-        let doc = RepositoryDocument()
-        do {
-            try doc.loadRepository(at: url)
-            self.document = doc
-            addToRecentRepositories(url)
-        } catch {
-            // Show error alert
-            let alert = NSAlert()
-            alert.messageText = "Failed to open repository"
-            alert.informativeText = error.localizedDescription
-            alert.alertStyle = .warning
-            alert.runModal()
-        }
+        // Post notification to open in new window
+        NotificationCenter.default.post(name: .openRepositoryInWindow, object: url)
     }
 
-    private func addToRecentRepositories(_ url: URL) {
+    func addToRecentRepositories(_ url: URL) {
         var recent = UserDefaults.standard.stringArray(forKey: "recentRepositories") ?? []
         recent.removeAll { $0 == url.path }
         recent.insert(url.path, at: 0)
@@ -355,17 +421,33 @@ extension Notification.Name {
     static let showHistoryView = Notification.Name("showHistoryView")
     static let showCommitView = Notification.Name("showCommitView")
     static let showCloneSheet = Notification.Name("showCloneSheet")
+    static let openRepositoryInWindow = Notification.Name("openRepositoryInWindow")
 }
 
 // MARK: - App Delegate
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    /// URLs that should be opened in new windows (set before app finishes launching)
+    static var pendingURLs: [URL] = []
+    /// Flag to indicate URLs were received before launch finished
+    static var hasReceivedURLs = false
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Register defaults
         UserDefaults.standard.register(defaults: [
             "gitBinaryPath": "/usr/bin/git",
             "terminalApp": "Terminal"
         ])
+
+        // If we received URLs during launch, post notifications after a delay
+        // to ensure windows are ready
+        if Self.hasReceivedURLs {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                for url in Self.pendingURLs {
+                    NotificationCenter.default.post(name: .openRepositoryInWindow, object: url)
+                }
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -378,10 +460,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // Handle opening files/folders from Finder or command line
+    // This is called BEFORE applicationDidFinishLaunching when opening via URL
     func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls {
-            Task { @MainActor in
-                AppState.shared.openRepository(at: url)
+        Self.hasReceivedURLs = true
+        Self.pendingURLs.append(contentsOf: urls)
+
+        // If app is already running, post notification immediately
+        if NSApp.isRunning {
+            for url in urls {
+                NotificationCenter.default.post(name: .openRepositoryInWindow, object: url)
             }
         }
     }

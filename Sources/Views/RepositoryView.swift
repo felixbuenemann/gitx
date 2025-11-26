@@ -12,12 +12,14 @@ struct RepositoryView: View {
     @State private var selectedSidebarItem: SidebarItem? = .history
     @State private var selectedCommit: CommitInfo?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             SidebarView(
                 state: document.state,
-                selection: $selectedSidebarItem
+                selection: $selectedSidebarItem,
+                onSubmoduleSelected: openSubmodule
             )
             .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 300)
         } detail: {
@@ -61,9 +63,22 @@ struct RepositoryView: View {
         case .remote(let remoteName):
             // TODO: Load commits for remote
             break
+        case .submodule:
+            // Handled via onSubmoduleSelected callback
+            break
         default:
             break
         }
+    }
+
+    private func openSubmodule(_ submodule: SubmoduleInfo) {
+        guard let repoURL = document.state.url, submodule.isCheckedOut else {
+            return
+        }
+
+        let submoduleURL = repoURL.appendingPathComponent(submodule.path)
+        // Open directly in new window - don't use notifications
+        openWindow(id: "main", value: submoduleURL)
     }
 
     // MARK: - Content View
