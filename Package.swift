@@ -15,7 +15,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/ibrahimcetin/SwiftGitX", from: "0.2.0"),
+        .package(url: "https://github.com/ibrahimcetin/libgit2.git", from: "1.9.0"),
         .package(url: "https://github.com/smittytone/HighlighterSwift.git", from: "2.0.0")
     ],
     targets: [
@@ -23,7 +23,7 @@ let package = Package(
         .target(
             name: "GitXCore",
             dependencies: [
-                .product(name: "SwiftGitX", package: "SwiftGitX"),
+                .product(name: "libgit2", package: "libgit2"),
                 .product(name: "Highlighter", package: "HighlighterSwift")
             ],
             path: "Sources",

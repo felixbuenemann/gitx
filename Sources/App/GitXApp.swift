@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftGitX
 
 @main
 struct GitXApp: App {
@@ -465,8 +464,8 @@ class AppState: ObservableObject {
     static let shared = AppState()
 
     init() {
-        // Initialize SwiftGitX
-        try? SwiftGitX.initialize()
+        // Initialize libgit2
+        Git.initialize()
     }
 
     func showOpenPanel() {
@@ -566,8 +565,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        // Shutdown SwiftGitX
-        try? SwiftGitX.shutdown()
+        // Shutdown libgit2
+        Git.shutdown()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

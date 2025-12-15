@@ -22,6 +22,7 @@
 		SW036 /* PersistentSplitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF036; };
 		SW037 /* CommitGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF037; };
 		SW038 /* CommitTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF038; };
+		SW039 /* Git.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF039; };
 		/* Resources */
 		RB001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = RF001; };
 		RB002 /* Credits.html in Resources */ = {isa = PBXBuildFile; fileRef = RF004; };
@@ -31,7 +32,7 @@
 		RB006 /* Images in Resources */ = {isa = PBXBuildFile; fileRef = RF008; };
 		/* Frameworks */
 		FB001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = PR001; };
-		FB002 /* SwiftGitX in Frameworks */ = {isa = PBXBuildFile; productRef = PR002; };
+		FB002 /* libgit2 in Frameworks */ = {isa = PBXBuildFile; productRef = PR002; };
 		FB003 /* Highlighter in Frameworks */ = {isa = PBXBuildFile; productRef = PR003; };
 /* End PBXBuildFile section */
 
@@ -53,6 +54,7 @@
 		SF036 /* PersistentSplitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistentSplitView.swift; sourceTree = "<group>"; };
 		SF037 /* CommitGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommitGraphView.swift; sourceTree = "<group>"; };
 		SF038 /* CommitTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommitTableView.swift; sourceTree = "<group>"; };
+		SF039 /* Git.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Git.swift; sourceTree = "<group>"; };
 		/* Resources */
 		RF001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		RF002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -70,7 +72,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FB001 /* Sparkle in Frameworks */,
-				FB002 /* SwiftGitX in Frameworks */,
+				FB002 /* libgit2 in Frameworks */,
 				FB003 /* Highlighter in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -149,6 +151,7 @@
 			children = (
 				SF025 /* GitXApp.swift */,
 				SF031 /* RepositoryDocument.swift */,
+				SF039 /* Git.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -197,7 +200,7 @@
 			name = GitX;
 			packageProductDependencies = (
 				PR001 /* Sparkle */,
-				PR002 /* SwiftGitX */,
+				PR002 /* libgit2 */,
 				PR003 /* Highlighter */,
 			);
 			productName = GitX;
@@ -230,7 +233,7 @@
 			mainGroup = ROOT;
 			packageReferences = (
 				PKG001 /* XCRemoteSwiftPackageReference "Sparkle" */,
-				PKG002 /* XCRemoteSwiftPackageReference "SwiftGitX" */,
+				PKG002 /* XCRemoteSwiftPackageReference "libgit2" */,
 				PKG003 /* XCRemoteSwiftPackageReference "HighlighterSwift" */,
 			);
 			productRefGroup = GRP007 /* Products */;
@@ -275,6 +278,7 @@
 				SW036 /* PersistentSplitView.swift in Sources */,
 				SW037 /* CommitGraphView.swift in Sources */,
 				SW038 /* CommitTableView.swift in Sources */,
+				SW039 /* Git.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -485,12 +489,12 @@
 				minimumVersion = 2.0.0;
 			};
 		};
-		PKG002 /* XCRemoteSwiftPackageReference "SwiftGitX" */ = {
+		PKG002 /* XCRemoteSwiftPackageReference "libgit2" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ibrahimcetin/SwiftGitX";
+			repositoryURL = "https://github.com/ibrahimcetin/libgit2.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.1.0;
+				minimumVersion = 1.9.0;
 			};
 		};
 		PKG003 /* XCRemoteSwiftPackageReference "HighlighterSwift" */ = {
@@ -509,10 +513,10 @@
 			package = PKG001 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
 		};
-		PR002 /* SwiftGitX */ = {
+		PR002 /* libgit2 */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = PKG002 /* XCRemoteSwiftPackageReference "SwiftGitX" */;
-			productName = SwiftGitX;
+			package = PKG002 /* XCRemoteSwiftPackageReference "libgit2" */;
+			productName = libgit2;
 		};
 		PR003 /* Highlighter */ = {
 			isa = XCSwiftPackageProductDependency;

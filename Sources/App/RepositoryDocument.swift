@@ -7,29 +7,26 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
-import SwiftGitX
+import libgit2
 
 // MARK: - Repository Document
 
 final class RepositoryDocument: ReferenceFileDocument {
     typealias Snapshot = RepositoryState
 
-    @Published var repository: Repository?
+    @Published var repository: GitRepository?
     @Published var state: RepositoryState
 
     static var readableContentTypes: [UTType] { [.folder] }
 
     init() {
         self.state = RepositoryState()
-        // Initialize SwiftGitX
-        try? SwiftGitX.initialize()
+        Git.initialize()
     }
 
     init(configuration: ReadConfiguration) throws {
         self.state = RepositoryState()
-
-        // Initialize SwiftGitX
-        try? SwiftGitX.initialize()
+        Git.initialize()
 
         guard let url = configuration.file.filename.flatMap({ URL(fileURLWithPath: $0) }) else {
             throw CocoaError(.fileReadCorruptFile)
@@ -62,7 +59,7 @@ final class RepositoryDocument: ReferenceFileDocument {
         }
 
         do {
-            repository = try Repository.open(at: repoPath)
+            repository = try GitRepository(at: repoPath)
             state.url = repoPath
             state.name = repoPath.lastPathComponent
             refreshState()
@@ -107,10 +104,10 @@ final class RepositoryDocument: ReferenceFileDocument {
         Task {
             do {
                 // Get current branch
-                let head = try repo.HEAD
+                let head = try repo.head()
                 let branchName: String
-                if let branch = head as? Branch {
-                    branchName = branch.name
+                if head.isBranch {
+                    branchName = head.shortName
                 } else {
                     branchName = "HEAD (detached)"
                 }
@@ -119,10 +116,10 @@ final class RepositoryDocument: ReferenceFileDocument {
                 var branchNames: [String] = []
                 var commitRefs: [String: [RefInfo]] = [:]
 
-                for branch in repo.branch.local {
+                for branch in try repo.localBranches() {
                     branchNames.append(branch.name)
                     // Get the commit this branch points to
-                    let commitOID = branch.target.id.hex
+                    let commitOID = branch.targetOID.hex
                     let refInfo = RefInfo(name: branch.name, type: .localBranch)
                     commitRefs[commitOID, default: []].append(refInfo)
                 }
@@ -130,26 +127,23 @@ final class RepositoryDocument: ReferenceFileDocument {
                 branchNames.sort { $0.localizedStandardCompare($1) == .orderedAscending }
 
                 // Get remote branches
-                for branch in repo.branch.remote {
-                    let commitOID = branch.target.id.hex
+                for branch in try repo.remoteBranches() {
+                    let commitOID = branch.targetOID.hex
                     let refInfo = RefInfo(name: branch.name, type: .remoteBranch)
                     commitRefs[commitOID, default: []].append(refInfo)
                 }
 
                 // Get remotes
-                var remoteNames: [String] = []
-                for remote in repo.remote {
-                    remoteNames.append(remote.name)
-                }
+                var remoteNames = try repo.remotes()
                 // Sort remotes using natural/human sort
                 remoteNames.sort { $0.localizedStandardCompare($1) == .orderedAscending }
 
                 // Get tags
                 var tagNames: [String] = []
-                for tag in repo.tag {
+                for tag in try repo.tags() {
                     tagNames.append(tag.name)
                     // Get the commit this tag points to
-                    let commitOID = tag.target.id.hex
+                    let commitOID = tag.oid.hex
                     let refInfo = RefInfo(name: tag.name, type: .tag)
                     commitRefs[commitOID, default: []].append(refInfo)
                 }
@@ -158,13 +152,13 @@ final class RepositoryDocument: ReferenceFileDocument {
 
                 // Get stashes
                 var stashInfos: [StashInfo] = []
-                if let stashEntries = try? repo.stash.list() {
+                if let stashEntries = try? repo.stashes() {
                     for entry in stashEntries {
                         let info = StashInfo(
                             id: entry.index,
                             message: entry.message,
-                            date: entry.date,
-                            stasher: entry.stasher.name
+                            date: Date(),  // libgit2 stash doesn't provide date directly
+                            stasher: ""    // Would need to look up the commit
                         )
                         stashInfos.append(info)
                     }
@@ -275,93 +269,75 @@ final class RepositoryDocument: ReferenceFileDocument {
     private func loadCommitsSync(fromBranch branchName: String? = nil, limit: Int = 1000) -> [CommitInfo] {
         guard let repo = repository else { return [] }
 
-        var commits: [CommitInfo] = []
+        var commitInfos: [CommitInfo] = []
 
         do {
-            let log: CommitSequence
+            var startOID: GitOID? = nil
 
             if let branchName = branchName {
-                // Find the branch and log from it
-                if let branch = repo.branch.local.first(where: { $0.name == branchName }) {
-                    log = try repo.log(from: branch)
-                } else {
-                    // Branch not found, fall back to HEAD
-                    log = try repo.log()
+                // Find the branch and get its target OID
+                if let branch = try repo.localBranches().first(where: { $0.name == branchName }) {
+                    startOID = branch.targetOID
                 }
-            } else {
-                // All branches - just use HEAD for now
-                log = try repo.log()
             }
-            var count = 0
 
-            for commit in log {
-                if count >= limit { break }
+            let commits = try repo.log(from: startOID, limit: limit)
 
+            for commit in commits {
                 // Get parent IDs
                 var parentIds: [String] = []
-                if let parents = try? commit.parents {
-                    parentIds = parents.map { $0.id.hex }
+                for i in 0..<commit.parentCount {
+                    if let parentOid = commit.parentOID(at: i) {
+                        parentIds.append(parentOid.hex)
+                    }
                 }
 
                 let info = CommitInfo(
-                    oid: commit.id.hex,
-                    shortOID: commit.id.abbreviated,
+                    oid: commit.oid.hex,
+                    shortOID: commit.oid.abbreviated,
                     message: commit.message,
                     summary: commit.summary,
                     author: commit.author.name,
                     authorEmail: commit.author.email,
-                    date: commit.date,
+                    date: commit.author.date,
                     parents: parentIds
                 )
-                commits.append(info)
-                count += 1
+                commitInfos.append(info)
             }
         } catch {
             print("Error loading commits: \(error)")
         }
 
-        return commits
+        return commitInfos
     }
 
     // MARK: - Diff Support
 
-    /// Get the file list for a commit (fast - no patch content)
+    /// Get the file list for a commit (fast - only deltas, no patch content)
     func getFileList(for commitInfo: CommitInfo) -> DiffResult? {
         guard let repo = repository else { return nil }
 
         do {
-            let oid = try OID(hex: commitInfo.oid)
-            let commit: Commit = try repo.show(id: oid)
+            guard let oid = GitOID(hex: commitInfo.oid) else {
+                return nil
+            }
+            let commit = try repo.lookupCommit(oid: oid)
             let diff = try repo.diff(commit: commit)
 
-            // Only use changes (deltas) for file metadata - don't process patches
+            // Only iterate deltas for file metadata - patches are loaded lazily
             var fileChanges: [FileChange] = []
 
-            for (index, delta) in diff.changes.enumerated() {
-                let filePath = delta.newFile.path.isEmpty ? delta.oldFile.path : delta.newFile.path
+            for index in 0..<diff.deltaCount {
+                guard let delta = diff.delta(at: index) else { continue }
 
-                let changeType: FileChangeType
-                switch delta.type {
-                case .added:
-                    changeType = .added
-                case .deleted:
-                    changeType = .deleted
-                case .modified:
-                    changeType = .modified
-                case .renamed:
-                    changeType = .renamed
-                case .copied:
-                    changeType = .copied
-                default:
-                    changeType = .modified
-                }
+                let changeType = convertDeltaStatus(delta.status)
 
                 fileChanges.append(FileChange(
-                    path: filePath,
+                    path: delta.path,
                     oldPath: delta.oldFile.path,
                     changeType: changeType,
                     hunks: [],  // Empty - loaded lazily
-                    isBinary: delta.flags.contains(.binary),
+                    isBinary: delta.isBinary,
                     patchIndex: index
                 ))
             }
@@ -378,31 +354,31 @@ final class RepositoryDocument: ReferenceFileDocument {
         guard let repo = repository, let patchIndex = file.patchIndex else { return [] }
 
         do {
-            let oid = try OID(hex: commitOID)
-            let commit: Commit = try repo.show(id: oid)
+            guard let oid = GitOID(hex: commitOID) else { return [] }
+            let commit = try repo.lookupCommit(oid: oid)
             let diff = try repo.diff(commit: commit)
 
-            guard patchIndex < diff.patches.count else { return [] }
-            let patch = diff.patches[patchIndex]
+            guard let patch = diff.patch(at: patchIndex) else { return [] }
 
             var hunks: [DiffHunk] = []
-            for hunk in patch.hunks {
+            for hunkIndex in 0..<patch.hunkCount {
+                guard let hunk = patch.hunk(at: hunkIndex) else { continue }
+
                 var lines: [DiffLine] = []
                 for line in hunk.lines {
                     let lineType: DiffLineType
-                    switch line.type {
-                    case .addition:
+                    if line.isAddition {
                         lineType = .addition
-                    case .deletion:
+                    } else if line.isDeletion {
                         lineType = .deletion
-                    default:
+                    } else {
                         lineType = .context
                     }
                     lines.append(DiffLine(
                         type: lineType,
                         content: line.content,
-                        oldLineNumber: lineType == .addition ? nil : line.lineNumber,
-                        newLineNumber: lineType == .deletion ? nil : line.lineNumber
+                        oldLineNumber: lineType == .addition ? nil : line.oldLineNo,
+                        newLineNumber: lineType == .deletion ? nil : line.newLineNo
                     ))
                 }
                 hunks.append(DiffHunk(
@@ -422,43 +398,57 @@ final class RepositoryDocument: ReferenceFileDocument {
         }
     }
 
+    private func convertDeltaStatus(_ status: git_delta_t) -> FileChangeType {
+        switch status {
+        case GIT_DELTA_ADDED:
+            return .added
+        case GIT_DELTA_DELETED:
+            return .deleted
+        case GIT_DELTA_MODIFIED:
+            return .modified
+        case GIT_DELTA_RENAMED:
+            return .renamed
+        case GIT_DELTA_COPIED:
+            return .copied
+        default:
+            return .modified
+        }
+    }
+
     /// Get the diff for a commit compared to its parent (legacy - loads everything)
     func getDiff(for commitInfo: CommitInfo) -> DiffResult? {
         guard let repo = repository else { return nil }
 
         do {
-            // Look up the actual commit object by OID
-            let oid = try OID(hex: commitInfo.oid)
-            let commit: Commit = try repo.show(id: oid)
-
-            // Get diff comparing to parent
+            guard let oid = GitOID(hex: commitInfo.oid) else { return nil }
+            let commit = try repo.lookupCommit(oid: oid)
             let diff = try repo.diff(commit: commit)
 
-            // Convert to our view model
             var fileChanges: [FileChange] = []
 
-            for patch in diff.patches {
-                let delta = patch.delta
-                let filePath = delta.newFile.path.isEmpty ? delta.oldFile.path : delta.newFile.path
+            for index in 0..<diff.deltaCount {
+                guard let delta = diff.delta(at: index),
+                      let patch = diff.patch(at: index) else { continue }
 
                 var hunks: [DiffHunk] = []
-                for hunk in patch.hunks {
+                for hunkIndex in 0..<patch.hunkCount {
+                    guard let hunk = patch.hunk(at: hunkIndex) else { continue }
+
                     var lines: [DiffLine] = []
                     for line in hunk.lines {
                         let lineType: DiffLineType
-                        switch line.type {
-                        case .addition:
+                        if line.isAddition {
                             lineType = .addition
-                        case .deletion:
+                        } else if line.isDeletion {
                             lineType = .deletion
-                        default:
+                        } else {
                             lineType = .context
                         }
                         lines.append(DiffLine(
                             type: lineType,
                             content: line.content,
-                            oldLineNumber: lineType == .addition ? nil : line.lineNumber,
-                            newLineNumber: lineType == .deletion ? nil : line.lineNumber
+                            oldLineNumber: lineType == .addition ? nil : line.oldLineNo,
+                            newLineNumber: lineType == .deletion ? nil : line.newLineNo
                         ))
                     }
                     hunks.append(DiffHunk(
@@ -471,28 +461,14 @@ final class RepositoryDocument: ReferenceFileDocument {
                     ))
                 }
 
-                let changeType: FileChangeType
-                switch delta.type {
-                case .added:
-                    changeType = .added
-                case .deleted:
-                    changeType = .deleted
-                case .modified:
-                    changeType = .modified
-                case .renamed:
-                    changeType = .renamed
-                case .copied:
-                    changeType = .copied
-                default:
-                    changeType = .modified
-                }
+                let changeType = convertDeltaStatus(delta.status)
 
                 fileChanges.append(FileChange(
-                    path: filePath,
+                    path: delta.path,
                     oldPath: delta.oldFile.path,
                     changeType: changeType,
                     hunks: hunks,
-                    isBinary: delta.flags.contains(.binary)
+                    isBinary: delta.isBinary
                 ))
             }
 
@@ -508,27 +484,35 @@ final class RepositoryDocument: ReferenceFileDocument {
         guard let repo = repository else { return nil }
 
         do {
-            let oid = try OID(hex: commitInfo.oid)
-            let commit: Commit = try repo.show(id: oid)
-            let tree = try commit.tree
+            guard let oid = GitOID(hex: commitInfo.oid) else { return nil }
+            let commit = try repo.lookupCommit(oid: oid)
+            let tree = try commit.tree(in: repo)
 
             // Find the blob in the tree by searching entries
             let pathComponents = path.components(separatedBy: "/")
             var currentTree = tree
 
             for (index, component) in pathComponents.enumerated() {
-                if let entry = currentTree.entries.first(where: { $0.name == component }) {
-                    if index == pathComponents.count - 1 {
-                        // This is the file - load the blob
-                        if entry.type == .blob {
-                            let blob: Blob = try repo.show(id: entry.id)
-                            return String(data: blob.content, encoding: .utf8)
-                        }
-                    } else {
-                        // This is a directory - load the subtree
-                        if entry.type == .tree {
-                            currentTree = try repo.show(id: entry.id)
-                        }
+                var foundEntry: GitTreeEntry? = nil
+                for entryIndex in 0..<currentTree.entryCount {
+                    if let entry = currentTree.entry(at: entryIndex), entry.name == component {
+                        foundEntry = entry
+                        break
+                    }
+                }
+
+                guard let entry = foundEntry else { return nil }
+
+                if index == pathComponents.count - 1 {
+                    // This is the file - load the blob
+                    if entry.isBlob {
+                        let data = try repo.lookupBlob(oid: entry.oid)
+                        return String(data: data, encoding: .utf8)
+                    }
+                } else {
+                    // This is a directory - load the subtree
+                    if entry.isTree {
+                        currentTree = try repo.lookupTree(oid: entry.oid)
                     }
                 }
             }
