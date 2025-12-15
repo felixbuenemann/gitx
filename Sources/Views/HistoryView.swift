@@ -510,6 +510,8 @@ struct DiffLineView: View {
     @State private var highlightedContent: AttributedString?
     @Environment(\.colorScheme) private var colorScheme
 
+    private static let highlighter = Highlighter()
+
     var body: some View {
         HStack(spacing: 0) {
             // Line numbers
@@ -553,17 +555,15 @@ struct DiffLineView: View {
 
     private func highlightContent() async {
         let content = line.content.trimmingCharacters(in: .newlines)
-        guard !content.isEmpty else { return }
+        guard !content.isEmpty, let highlighter = Self.highlighter else { return }
+
+        // Set theme based on color scheme
+        let themeName = colorScheme == .dark ? "atom-one-dark" : "atom-one-light"
+        highlighter.setTheme(themeName, withFont: NSFont.monospacedSystemFont(ofSize: 0, weight: .regular).fontName, ofSize: NSFont.systemFontSize)
 
         // Run highlighting off the main thread
         let result = await Task.detached(priority: .userInitiated) {
-            guard let highlighter = Highlighter() else { return nil as NSAttributedString? }
-
-            // Set theme based on color scheme
-            let themeName = await MainActor.run { colorScheme == .dark ? "atom-one-dark" : "atom-one-light" }
-            highlighter.setTheme(themeName, withFont: NSFont.monospacedSystemFont(ofSize: 0, weight: .regular).fontName, ofSize: NSFont.systemFontSize)
-
-            return highlighter.highlight(content, as: languageHint)
+            highlighter.highlight(content, as: languageHint)
         }.value
 
         if let nsAttrString = result {
