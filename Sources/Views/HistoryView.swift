@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import HighlightSwift
+import Highlighter
 
 struct HistoryView: View {
     @ObservedObject var document: RepositoryDocument
@@ -510,8 +510,6 @@ struct DiffLineView: View {
     @State private var highlightedContent: AttributedString?
     @Environment(\.colorScheme) private var colorScheme
 
-    private static let highlighter = Highlight()
-
     var body: some View {
         HStack(spacing: 0) {
             // Line numbers
@@ -557,42 +555,20 @@ struct DiffLineView: View {
         let content = line.content.trimmingCharacters(in: .newlines)
         guard !content.isEmpty else { return }
 
-        // Preserve leading whitespace (HighlightSwift trims it)
-        let leadingWhitespace = String(content.prefix(while: { $0.isWhitespace }))
-        let trimmedContent = String(content.dropFirst(leadingWhitespace.count))
+        // Run highlighting off the main thread
+        let result = await Task.detached(priority: .userInitiated) {
+            guard let highlighter = Highlighter() else { return nil as NSAttributedString? }
 
-        guard !trimmedContent.isEmpty else {
-            // Line is only whitespace
-            highlightedContent = AttributedString(content)
-            return
-        }
+            // Set theme based on color scheme
+            let themeName = await MainActor.run { colorScheme == .dark ? "atom-one-dark" : "atom-one-light" }
+            highlighter.setTheme(themeName, withFont: NSFont.monospacedSystemFont(ofSize: 0, weight: .regular).fontName, ofSize: NSFont.systemFontSize)
 
-        let colors: HighlightColors = colorScheme == .dark ? .dark(.xcode) : .light(.xcode)
+            return highlighter.highlight(content, as: languageHint)
+        }.value
 
-        do {
-            var highlighted: AttributedString
-            if let hint = languageHint {
-                highlighted = try await Self.highlighter.attributedText(
-                    trimmedContent,
-                    language: hint,
-                    colors: colors
-                )
-            } else {
-                highlighted = try await Self.highlighter.attributedText(
-                    trimmedContent,
-                    colors: colors
-                )
-            }
-
-            // Restore leading whitespace
-            if !leadingWhitespace.isEmpty {
-                highlightedContent = AttributedString(leadingWhitespace) + highlighted
-            } else {
-                highlightedContent = highlighted
-            }
-        } catch {
-            // Fall back to plain text on error
-            highlightedContent = nil
+        if let nsAttrString = result {
+            // Convert NSAttributedString to AttributedString
+            highlightedContent = try? AttributedString(nsAttrString, including: \.appKit)
         }
     }
 }

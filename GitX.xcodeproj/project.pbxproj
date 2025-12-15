@@ -32,7 +32,7 @@
 		/* Frameworks */
 		FB001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = PR001; };
 		FB002 /* SwiftGitX in Frameworks */ = {isa = PBXBuildFile; productRef = PR002; };
-		FB003 /* HighlightSwift in Frameworks */ = {isa = PBXBuildFile; productRef = PR003; };
+		FB003 /* Highlighter in Frameworks */ = {isa = PBXBuildFile; productRef = PR003; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -71,7 +71,7 @@
 			files = (
 				FB001 /* Sparkle in Frameworks */,
 				FB002 /* SwiftGitX in Frameworks */,
-				FB003 /* HighlightSwift in Frameworks */,
+				FB003 /* Highlighter in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -198,7 +198,7 @@
 			packageProductDependencies = (
 				PR001 /* Sparkle */,
 				PR002 /* SwiftGitX */,
-				PR003 /* HighlightSwift */,
+				PR003 /* Highlighter */,
 			);
 			productName = GitX;
 			productReference = PROD1 /* GitX.app */;
@@ -231,7 +231,7 @@
 			packageReferences = (
 				PKG001 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				PKG002 /* XCRemoteSwiftPackageReference "SwiftGitX" */,
-				PKG003 /* XCRemoteSwiftPackageReference "HighlightSwift" */,
+				PKG003 /* XCRemoteSwiftPackageReference "HighlighterSwift" */,
 			);
 			productRefGroup = GRP007 /* Products */;
 			projectDirPath = "";
@@ -493,12 +493,12 @@
 				minimumVersion = 0.1.0;
 			};
 		};
-		PKG003 /* XCRemoteSwiftPackageReference "HighlightSwift" */ = {
+		PKG003 /* XCRemoteSwiftPackageReference "HighlighterSwift" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/appstefan/HighlightSwift";
+			repositoryURL = "https://github.com/smittytone/HighlighterSwift";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
+				minimumVersion = 2.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -514,10 +514,10 @@
 			package = PKG002 /* XCRemoteSwiftPackageReference "SwiftGitX" */;
 			productName = SwiftGitX;
 		};
-		PR003 /* HighlightSwift */ = {
+		PR003 /* Highlighter */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = PKG003 /* XCRemoteSwiftPackageReference "HighlightSwift" */;
-			productName = HighlightSwift;
+			package = PKG003 /* XCRemoteSwiftPackageReference "HighlighterSwift" */;
+			productName = Highlighter;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
