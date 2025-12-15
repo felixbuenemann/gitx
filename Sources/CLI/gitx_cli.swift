@@ -223,7 +223,7 @@ func handleSTDINDiff() {
 }
 
 func handleDiff(repositoryURL: URL, arguments: [String]) -> Never {
-    var args = ["diff", "--no-ext-diff"] + arguments
+    let args = ["diff", "--no-ext-diff"] + arguments
 
     guard let output = runGit(args, in: repositoryURL.path) else {
         print("Invalid diff command")
