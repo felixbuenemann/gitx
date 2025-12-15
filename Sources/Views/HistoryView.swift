@@ -249,7 +249,9 @@ struct DiffContentView: View {
     @ObservedObject var document: RepositoryDocument
     @State private var diffResult: DiffResult?
     @State private var selectedFile: FileChange?
+    @State private var loadedFile: FileChange?  // File with hunks loaded
     @State private var isLoading = true
+    @State private var isLoadingHunks = false
 
     var body: some View {
         PersistentHSplitView(
@@ -264,10 +266,15 @@ struct DiffContentView: View {
             diffDetailView
         }
         .onAppear {
-            loadDiff()
+            loadFileList()
         }
         .onChange(of: commit.oid) { _, _ in
-            loadDiff()
+            loadFileList()
+        }
+        .onChange(of: selectedFile) { _, newFile in
+            if let file = newFile {
+                loadFileHunks(file)
+            }
         }
     }
 
@@ -312,13 +319,16 @@ struct DiffContentView: View {
 
     private var diffDetailView: some View {
         Group {
-            if let file = selectedFile {
+            if isLoadingHunks {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let file = loadedFile {
                 FileDiffView(file: file)
-            } else if let diff = diffResult, let firstFile = diff.files.first {
-                FileDiffView(file: firstFile)
-                    .onAppear {
-                        selectedFile = firstFile
-                    }
+            } else if selectedFile == nil, let diff = diffResult, let firstFile = diff.files.first {
+                // Auto-select first file
+                Color.clear.onAppear {
+                    selectedFile = firstFile
+                }
             } else {
                 VStack {
                     Image(systemName: "doc.text")
@@ -332,19 +342,39 @@ struct DiffContentView: View {
         }
     }
 
-    private func loadDiff() {
+    private func loadFileList() {
         isLoading = true
         selectedFile = nil
+        loadedFile = nil
 
         DispatchQueue.global(qos: .userInitiated).async {
-            let result = document.getDiff(for: commit)
+            let result = document.getFileList(for: commit)
 
             DispatchQueue.main.async {
                 diffResult = result
                 isLoading = false
-                if let firstFile = result?.files.first {
-                    selectedFile = firstFile
-                }
+            }
+        }
+    }
+
+    private func loadFileHunks(_ file: FileChange) {
+        guard let commitOID = diffResult?.commitOID else { return }
+
+        // If hunks already loaded for this file, just display it
+        if file.patchIndex == loadedFile?.patchIndex && !loadedFile!.hunks.isEmpty {
+            return
+        }
+
+        isLoadingHunks = true
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let hunks = document.getFileHunks(for: file, commitOID: commitOID)
+
+            DispatchQueue.main.async {
+                var fileWithHunks = file
+                fileWithHunks.hunks = hunks
+                loadedFile = fileWithHunks
+                isLoadingHunks = false
             }
         }
     }

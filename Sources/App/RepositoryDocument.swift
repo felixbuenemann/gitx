@@ -325,7 +325,104 @@ final class RepositoryDocument: ReferenceFileDocument {
 
     // MARK: - Diff Support
 
-    /// Get the diff for a commit compared to its parent
+    /// Get the file list for a commit (fast - no patch content)
+    func getFileList(for commitInfo: CommitInfo) -> DiffResult? {
+        guard let repo = repository else { return nil }
+
+        do {
+            let oid = try OID(hex: commitInfo.oid)
+            let commit: Commit = try repo.show(id: oid)
+            let diff = try repo.diff(commit: commit)
+
+            // Only use changes (deltas) for file metadata - don't process patches
+            var fileChanges: [FileChange] = []
+
+            for (index, delta) in diff.changes.enumerated() {
+                let filePath = delta.newFile.path.isEmpty ? delta.oldFile.path : delta.newFile.path
+
+                let changeType: FileChangeType
+                switch delta.type {
+                case .added:
+                    changeType = .added
+                case .deleted:
+                    changeType = .deleted
+                case .modified:
+                    changeType = .modified
+                case .renamed:
+                    changeType = .renamed
+                case .copied:
+                    changeType = .copied
+                default:
+                    changeType = .modified
+                }
+
+                fileChanges.append(FileChange(
+                    path: filePath,
+                    oldPath: delta.oldFile.path,
+                    changeType: changeType,
+                    hunks: [],  // Empty - loaded lazily
+                    isBinary: delta.flags.contains(.binary),
+                    patchIndex: index
+                ))
+            }
+
+            return DiffResult(files: fileChanges, commitOID: commitInfo.oid)
+        } catch {
+            print("Error getting file list: \(error)")
+            return nil
+        }
+    }
+
+    /// Get the hunks for a specific file (called when file is selected)
+    func getFileHunks(for file: FileChange, commitOID: String) -> [DiffHunk] {
+        guard let repo = repository, let patchIndex = file.patchIndex else { return [] }
+
+        do {
+            let oid = try OID(hex: commitOID)
+            let commit: Commit = try repo.show(id: oid)
+            let diff = try repo.diff(commit: commit)
+
+            guard patchIndex < diff.patches.count else { return [] }
+            let patch = diff.patches[patchIndex]
+
+            var hunks: [DiffHunk] = []
+            for hunk in patch.hunks {
+                var lines: [DiffLine] = []
+                for line in hunk.lines {
+                    let lineType: DiffLineType
+                    switch line.type {
+                    case .addition:
+                        lineType = .addition
+                    case .deletion:
+                        lineType = .deletion
+                    default:
+                        lineType = .context
+                    }
+                    lines.append(DiffLine(
+                        type: lineType,
+                        content: line.content,
+                        oldLineNumber: lineType == .addition ? nil : line.lineNumber,
+                        newLineNumber: lineType == .deletion ? nil : line.lineNumber
+                    ))
+                }
+                hunks.append(DiffHunk(
+                    header: hunk.header,
+                    oldStart: hunk.oldStart,
+                    oldLines: hunk.oldLines,
+                    newStart: hunk.newStart,
+                    newLines: hunk.newLines,
+                    lines: lines
+                ))
+            }
+
+            return hunks
+        } catch {
+            print("Error getting file hunks: \(error)")
+            return []
+        }
+    }
+
+    /// Get the diff for a commit compared to its parent (legacy - loads everything)
     func getDiff(for commitInfo: CommitInfo) -> DiffResult? {
         guard let repo = repository else { return nil }
 
@@ -446,6 +543,7 @@ final class RepositoryDocument: ReferenceFileDocument {
 
 struct DiffResult {
     let files: [FileChange]
+    var commitOID: String?
 }
 
 struct FileChange: Identifiable, Hashable {
@@ -453,8 +551,9 @@ struct FileChange: Identifiable, Hashable {
     let path: String
     let oldPath: String
     let changeType: FileChangeType
-    let hunks: [DiffHunk]
+    var hunks: [DiffHunk]
     let isBinary: Bool
+    var patchIndex: Int?
 
     var displayPath: String {
         if changeType == .renamed && oldPath != path {
