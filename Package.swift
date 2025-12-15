@@ -15,14 +15,16 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/ibrahimcetin/SwiftGitX", from: "0.2.0")
+        .package(url: "https://github.com/ibrahimcetin/SwiftGitX", from: "0.2.0"),
+        .package(url: "https://github.com/appstefan/highlightswift.git", from: "1.1.0")
     ],
     targets: [
         // Core library with Git functionality
         .target(
             name: "GitXCore",
             dependencies: [
-                .product(name: "SwiftGitX", package: "SwiftGitX")
+                .product(name: "SwiftGitX", package: "SwiftGitX"),
+                .product(name: "HighlightSwift", package: "highlightswift")
             ],
             path: "Sources",
             exclude: ["CLI"],

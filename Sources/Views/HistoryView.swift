@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import HighlightSwift
 
 struct HistoryView: View {
     @ObservedObject var document: RepositoryDocument
@@ -416,6 +417,11 @@ struct DiffFileRow: View {
 struct FileDiffView: View {
     let file: FileChange
 
+    private var languageHint: String? {
+        let ext = (file.path as NSString).pathExtension.lowercased()
+        return ext.isEmpty ? nil : ext
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // File header
@@ -458,7 +464,7 @@ struct FileDiffView: View {
                     ScrollView([.horizontal, .vertical]) {
                         VStack(alignment: .leading, spacing: 0) {
                             ForEach(file.hunks) { hunk in
-                                HunkView(hunk: hunk)
+                                HunkView(hunk: hunk, languageHint: languageHint)
                             }
                         }
                         .frame(minWidth: geometry.size.width, minHeight: geometry.size.height, alignment: .topLeading)
@@ -474,6 +480,7 @@ struct FileDiffView: View {
 
 struct HunkView: View {
     let hunk: DiffHunk
+    let languageHint: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -488,7 +495,7 @@ struct HunkView: View {
 
             // Lines
             ForEach(hunk.lines) { line in
-                DiffLineView(line: line)
+                DiffLineView(line: line, languageHint: languageHint)
             }
         }
     }
@@ -498,6 +505,12 @@ struct HunkView: View {
 
 struct DiffLineView: View {
     let line: DiffLine
+    let languageHint: String?
+
+    @State private var highlightedContent: AttributedString?
+    @Environment(\.colorScheme) private var colorScheme
+
+    private static let highlighter = Highlight()
 
     var body: some View {
         HStack(spacing: 0) {
@@ -518,17 +531,69 @@ struct DiffLineView: View {
                 .foregroundColor(line.type.textColor)
                 .frame(width: 16)
 
-            // Content (trim trailing newlines)
-            Text(line.content.trimmingCharacters(in: .newlines))
-                .font(.system(.body, design: .monospaced))
-                .foregroundColor(line.type == .context ? .primary : line.type.textColor)
-                .textSelection(.enabled)
+            // Content with syntax highlighting
+            if let highlighted = highlightedContent {
+                Text(highlighted)
+                    .font(.system(.body, design: .monospaced))
+                    .textSelection(.enabled)
+            } else {
+                Text(line.content.trimmingCharacters(in: .newlines))
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundColor(line.type == .context ? .primary : line.type.textColor)
+                    .textSelection(.enabled)
+            }
 
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 1)
         .background(line.type.backgroundColor)
+        .task(id: line.content) {
+            await highlightContent()
+        }
+    }
+
+    private func highlightContent() async {
+        let content = line.content.trimmingCharacters(in: .newlines)
+        guard !content.isEmpty else { return }
+
+        // Preserve leading whitespace (HighlightSwift trims it)
+        let leadingWhitespace = String(content.prefix(while: { $0.isWhitespace }))
+        let trimmedContent = String(content.dropFirst(leadingWhitespace.count))
+
+        guard !trimmedContent.isEmpty else {
+            // Line is only whitespace
+            highlightedContent = AttributedString(content)
+            return
+        }
+
+        let colors: HighlightColors = colorScheme == .dark ? .dark(.xcode) : .light(.xcode)
+
+        do {
+            var highlighted: AttributedString
+            if let hint = languageHint {
+                highlighted = try await Self.highlighter.attributedText(
+                    trimmedContent,
+                    language: hint,
+                    colors: colors
+                )
+            } else {
+                highlighted = try await Self.highlighter.attributedText(
+                    trimmedContent,
+                    colors: colors
+                )
+            }
+
+            // Restore leading whitespace
+            if !leadingWhitespace.isEmpty {
+                highlightedContent = AttributedString(leadingWhitespace) + highlighted
+            } else {
+                highlightedContent = highlighted
+            }
+        } catch {
+            // Fall back to plain text on error
+            highlightedContent = nil
+        }
     }
 }
 
