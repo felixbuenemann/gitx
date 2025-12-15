@@ -68,7 +68,8 @@ struct HistoryView: View {
                 }
             }
             .pickerStyle(.segmented)
-            .frame(width: 120)
+            .labelsHidden()
+            .fixedSize()
 
             // Branch dropdown
             Menu {
